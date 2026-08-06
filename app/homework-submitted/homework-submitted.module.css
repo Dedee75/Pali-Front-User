@@ -1,0 +1,127 @@
+.container {
+  min-height: 100vh;
+  background-color: #f8f7f4; /* Same off-white background */
+  display: flex;
+  justify-content: center;
+}
+
+.mobileFrame {
+  width: 100%;
+  max-width: 430px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* User Card Styling */
+.userCard {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 10px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  border-top: 4px solid #b8860b; /* Gold top border */
+}
+
+.greeting {
+  font-size: 20px;
+  font-weight: bold;
+  color: #222;
+  margin: 0 0 8px 0;
+}
+
+.batchInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* Section Title */
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 20px;
+  padding-left: 10px;
+  border-left: 3px solid #b8860b; /* Gold left bar accent */
+  display: flex;
+  align-items: center;
+}
+
+/* 2x2 Image Grid */
+.imageGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.imageWrapper {
+  width: 100%;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eaeaea;
+  aspect-ratio: 3 / 4; /* Keeps the document shape */
+}
+
+.submittedImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none; /* Prevents clicking/interacting to keep it strictly Read-Only */
+}
+
+/* Button Container (Pushes footer down) */
+.buttonContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+/* Back Button */
+.btnBack {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  background-color: #b8860b; /* Gold */
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(188, 138, 43, 0.2);
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btnBack:hover {
+  background-color: #a37622;
+}
+
+.btnBack:active {
+  transform: scale(0.98);
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 30px 0 20px;
+  font-size: 13px;
+  color: #888;
+}
+
+.imageWrapper {
+  position: relative;
+  overflow: hidden;
+}

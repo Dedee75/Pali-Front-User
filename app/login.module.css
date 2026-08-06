@@ -1,0 +1,165 @@
+.container {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mobileFrame {
+  width: 100%;
+  max-width: 430px; /* Mobile width container */
+  height: 100vh;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+@media (min-width: 500px) {
+  .mobileFrame {
+    height: 90vh;
+    border-radius: 20px;
+    overflow: hidden;
+  }
+}
+
+/* Header Styling */
+.header {
+  background-color: #bc8a2b; /* Gold */
+  color: white;
+  padding: 40px 20px 30px;
+  text-align: center;
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 40px;
+  margin-bottom: 40px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.logoWrapper {
+  margin-bottom: 15px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0 0 8px 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  margin: 0;
+  opacity: 0.9;
+}
+
+/* Form Styling */
+.form {
+  padding: 0 30px;
+  flex: 1;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.label {
+  display: block;
+  font-weight: 700;
+  color: #444;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+/* Input Wrapper with Icons */
+.inputWrapper {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 0 15px;
+  height: 54px;
+  background: #fdfdfd;
+  transition: border-color 0.3s;
+}
+
+.inputWrapper:focus-within {
+  border-color: #bc8a2b;
+  background: white;
+}
+
+.icon {
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+/* Fixed text styling for MY001 - */
+.fixedPrefix {
+  color: #666;
+  font-size: 16px;
+  margin-right: 4px;
+  user-select: none; /* Prevents copying/selecting the prefix */
+}
+
+/* Input where user types the last 4 digits */
+.inputSuffix {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  color: #333;
+  padding: 0;
+  letter-spacing: 1px;
+}
+
+.inputSuffix::placeholder {
+  color: #bbb;
+}
+
+/* Full standard input for Phone */
+.inputFull {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  color: #333;
+}
+
+.inputFull::placeholder {
+  color: #bbb;
+}
+
+/* Submit Button */
+.submitBtn {
+  width: 100%;
+  margin-top: 15px;
+  height: 56px;
+  background-color: #bc8a2b;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(188, 138, 43, 0.2);
+  transition: background-color 0.3s, transform 0.1s;
+}
+
+.submitBtn:hover {
+  background-color: #a37622;
+}
+
+.submitBtn:active {
+  transform: scale(0.98);
+}
+
+/* Footer Styling */
+.footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 12px;
+  color: #888;
+  margin-top: auto; /* Pushes footer to the bottom */
+}

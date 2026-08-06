@@ -1,0 +1,181 @@
+.container {
+  min-height: 100vh;
+  background-color: #f8f7f4; /* Slightly warm off-white background */
+  display: flex;
+  justify-content: center;
+}
+
+.mobileFrame {
+  width: 100%;
+  max-width: 430px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* User Card Styling */
+.userCard {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 10px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  border-top: 4px solid #b8860b; /* Gold top border */
+}
+
+.greeting {
+  font-size: 20px;
+  font-weight: bold;
+  color: #222;
+  margin: 0 0 8px 0;
+}
+
+.batchInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* Section Title */
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 20px;
+  padding-left: 10px;
+  border-left: 3px solid #b8860b; /* Gold left bar accent */
+  display: flex;
+  align-items: center;
+}
+
+/* Homework List & Cards */
+.homeworkList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1; /* Pushes footer to bottom */
+}
+
+.card {
+  background: white;
+  border: 1px solid #eaeaea;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* Badges */
+.weekBadge {
+  font-size: 12px;
+  font-weight: 700;
+  color: #b8860b;
+  background-color: #fdfaf3;
+  border: 1px solid #efdfba;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.statusNotSubmitted {
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
+  background-color: #f0f0f0;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.statusApproved {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2e7d32;
+  background-color: #e8f5e9;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+/* Text inside cards */
+.taskTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 6px 0;
+}
+
+.taskDesc {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+}
+
+/* Due Date Box */
+.dueDateBox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f9f9f9;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 16px;
+}
+
+/* Action Buttons */
+.btnUpload {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  background-color: #b8860b;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btnUpload:hover {
+  background-color: #a37622;
+}
+
+.btnSubmitted {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  background-color: #f1fbf3;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: default;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 30px 0 20px;
+  font-size: 13px;
+  color: #888;
+  margin-top: auto;
+}

@@ -1,65 +1,472 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import {
+  useEffect,
+  useState,
+} from "react";
+import type {
+  FormEvent,
+} from "react";
+import { useRouter } from "next/navigation";
+import styles from "./login.module.css";
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:3000";
+
+function getErrorMessage(
+  result: unknown,
+): string {
+  if (
+    result &&
+    typeof result === "object" &&
+    "message" in result
+  ) {
+    const message = (
+      result as {
+        message?: unknown;
+      }
+    ).message;
+
+    if (
+      Array.isArray(message)
+    ) {
+      return message.join(", ");
+    }
+
+    if (
+      typeof message === "string"
+    ) {
+      return message;
+    }
+  }
+
+  return "Login failed.";
+}
+
+export default function LoginPage() {
+  const router = useRouter();
+
+  const [
+    studentIdSuffix,
+    setStudentIdSuffix,
+  ] = useState("");
+
+  const [phone, setPhone] =
+    useState("");
+
+  const [error, setError] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  useEffect(() => {
+    const registeredCode =
+      localStorage.getItem(
+        "registeredStudentCode",
+      );
+
+    if (
+      registeredCode?.startsWith(
+        "MY26-",
+      )
+    ) {
+      setStudentIdSuffix(
+        registeredCode.replace(
+          "MY26-",
+          "",
+        ),
+      );
+    }
+  }, []);
+
+  const handleLogin = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+
+    if (loading) {
+      return;
+    }
+
+    setError("");
+
+    const suffix =
+      studentIdSuffix.replace(
+        /\D/g,
+        "",
+      );
+
+    const normalizedPhone =
+      phone.replace(/\D/g, "");
+
+    if (
+      suffix.length < 4
+    ) {
+      setError(
+        "Student ID must contain at least 4 digits.",
+      );
+      return;
+    }
+
+    if (
+      !/^09\d{7,9}$/.test(
+        normalizedPhone,
+      )
+    ) {
+      setError(
+        "Phone must start with 09 and contain 9 to 11 digits.",
+      );
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const studentCode =
+        `MY26-${suffix}`;
+
+      const response =
+        await fetch(
+          `${API_URL}/student-auth/login`,
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              studentCode,
+              phone:
+                normalizedPhone,
+            }),
+          },
+        );
+
+      const result =
+        await response
+          .json()
+          .catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          getErrorMessage(
+            result,
+          ),
+        );
+      }
+
+      if (
+        !result?.accessToken ||
+        !result?.student
+      ) {
+        throw new Error(
+          "Invalid login response from server.",
+        );
+      }
+
+      localStorage.setItem(
+        "studentAccessToken",
+        result.accessToken,
+      );
+
+      localStorage.setItem(
+        "student",
+        JSON.stringify(
+          result.student,
+        ),
+      );
+
+      localStorage.setItem(
+        "registeredStudentCode",
+        result.student
+          .studentCode,
+      );
+
+      router.replace(
+        "/homepage",
+      );
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Login failed.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div
+      className={
+        styles.container
+      }
+    >
+      <div
+        className={
+          styles.mobileFrame
+        }
+      >
+        <div
+          className={
+            styles.header
+          }
+        >
+          <div
+            className={
+              styles.logoWrapper
+            }
+          >
+            <svg
+              width="60"
+              height="60"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+
+              <text
+                x="12"
+                y="14"
+                fill="white"
+                fontSize="10"
+                stroke="none"
+                textAnchor="middle"
+                fontWeight="bold"
+              >
+                A
+              </text>
+            </svg>
+          </div>
+
+          <h1
+            className={
+              styles.title
+            }
+          >
+            Dhamma Education
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+          <p
+            className={
+              styles.subtitle
+            }
+          >
+            Homework Management System
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        <form
+          className={
+            styles.form
+          }
+          onSubmit={handleLogin}
+          noValidate
+        >
+          {error && (
+            <div
+              style={{
+                padding:
+                  "10px 12px",
+                marginBottom:
+                  "16px",
+                borderRadius:
+                  "7px",
+                color: "#b91c1c",
+                background:
+                  "#fef2f2",
+                fontSize:
+                  "14px",
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          <div
+            className={
+              styles.formGroup
+            }
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <label
+              className={
+                styles.label
+              }
+            >
+              Student ID
+            </label>
+
+            <div
+              className={
+                styles.inputWrapper
+              }
+            >
+              <svg
+                className={
+                  styles.icon
+                }
+                viewBox="0 0 24 24"
+                fill="#b8860b"
+                width="20"
+                height="20"
+              >
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+              </svg>
+
+              <span
+                className={
+                  styles.fixedPrefix
+                }
+              >
+                MY26 -
+              </span>
+
+              <input
+                type="text"
+                className={
+                  styles.inputSuffix
+                }
+                placeholder="0200"
+                maxLength={8}
+                value={
+                  studentIdSuffix
+                }
+                onChange={(event) => {
+                  setStudentIdSuffix(
+                    event.target.value.replace(
+                      /\D/g,
+                      "",
+                    ),
+                  );
+
+                  setError("");
+                }}
+                inputMode="numeric"
+                autoComplete="username"
+                required
+              />
+            </div>
+          </div>
+
+          <div
+            className={
+              styles.formGroup
+            }
           >
-            Documentation
-          </a>
+            <label
+              className={
+                styles.label
+              }
+            >
+              Phone Number
+              (ဖုန်းနံပါတ်)
+            </label>
+
+            <div
+              className={
+                styles.inputWrapper
+              }
+            >
+              <svg
+                className={
+                  styles.icon
+                }
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#b8860b"
+                strokeWidth="2"
+                width="20"
+                height="20"
+              >
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+
+              <input
+                type="tel"
+                className={
+                  styles.inputFull
+                }
+                placeholder="09779953380"
+                maxLength={11}
+                value={phone}
+                onChange={(event) => {
+                  setPhone(
+                    event.target.value.replace(
+                      /\D/g,
+                      "",
+                    ),
+                  );
+
+                  setError("");
+                }}
+                inputMode="numeric"
+                autoComplete="tel"
+                required
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className={
+              styles.submitBtn
+            }
+            disabled={loading}
+          >
+            {loading
+              ? "ဝင်ရောက်နေသည်..."
+              : "Login (ဝင်မည်)"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              router.push(
+                "/register",
+              )
+            }
+            disabled={loading}
+            style={{
+              width: "100%",
+              marginTop: "12px",
+              padding:
+                "11px 14px",
+              border:
+                "1px solid #b8860b",
+              borderRadius:
+                "7px",
+              color: "#b8860b",
+              background:
+                "transparent",
+              cursor:
+                loading
+                  ? "not-allowed"
+                  : "pointer",
+              fontWeight: 600,
+            }}
+          >
+            Register New Student
+            (မှတ်ပုံတင်မည်)
+          </button>
+        </form>
+
+        <div
+          className={
+            styles.footer
+          }
+        >
+          O-Technique-Myanmar-2026@
         </div>
-      </main>
+      </div>
     </div>
   );
 }
