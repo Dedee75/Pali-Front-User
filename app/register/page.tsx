@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useEffect,
   useState,
 } from "react";
 import type {
@@ -8,14 +9,16 @@ import type {
   FormEvent,
 } from "react";
 import { useRouter } from "next/navigation";
+
 import styles from "./register.module.css";
 
-const API_URL =
+const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:3000";
+  "http://localhost:3000"
+).replace(/\/$/, "");
 
 const MAX_IMAGE_SIZE =
-  2 * 1024 * 1024;
+  6 * 1024 * 1024;
 
 type FormState = {
   name: string;
@@ -27,7 +30,7 @@ type FormState = {
   township: string;
   region: string;
   file: File | null;
-  image: string | null;
+  previewUrl: string;
 };
 
 type FormErrors =
@@ -54,7 +57,7 @@ const initialForm: FormState = {
   township: "",
   region: "",
   file: null,
-  image: null,
+  previewUrl: "",
 };
 
 function getErrorMessage(
@@ -87,64 +90,51 @@ function getErrorMessage(
   return "Registration failed.";
 }
 
-function fileToDataUrl(
-  file: File,
-): Promise<string> {
-  return new Promise(
-    (resolve, reject) => {
-      const reader =
-        new FileReader();
-
-      reader.onload = () => {
-        if (
-          typeof reader.result ===
-          "string"
-        ) {
-          resolve(reader.result);
-          return;
-        }
-
-        reject(
-          new Error(
-            "Could not read photo.",
-          ),
-        );
-      };
-
-      reader.onerror = () => {
-        reject(
-          new Error(
-            "Could not read photo.",
-          ),
-        );
-      };
-
-      reader.readAsDataURL(file);
-    },
-  );
-}
-
 export default function RegisterPage() {
-  const router = useRouter();
+  const router =
+    useRouter();
 
-  const [form, setForm] =
+  const [
+    form,
+    setForm,
+  ] =
     useState<FormState>(
       initialForm,
     );
 
-  const [errors, setErrors] =
+  const [
+    errors,
+    setErrors,
+  ] =
     useState<FormErrors>({});
 
-  const [submitting, setSubmitting] =
+  const [
+    submitting,
+    setSubmitting,
+  ] =
     useState(false);
 
+  useEffect(() => {
+    return () => {
+      if (
+        form.previewUrl
+      ) {
+        URL.revokeObjectURL(
+          form.previewUrl,
+        );
+      }
+    };
+  }, [form.previewUrl]);
+
   const handleChange = (
-    event: ChangeEvent<HTMLInputElement>,
+    event:
+      ChangeEvent<HTMLInputElement>,
   ) => {
     const {
       name,
       value,
-    } = event.target;
+    } =
+      event.target;
 
     const numericFields = [
       "dobDay",
@@ -154,43 +144,80 @@ export default function RegisterPage() {
     ];
 
     const nextValue =
-      numericFields.includes(name)
-        ? value.replace(/\D/g, "")
+      numericFields.includes(
+        name,
+      )
+        ? value.replace(
+            /\D/g,
+            "",
+          )
         : value;
 
-    setForm((current) => ({
-      ...current,
-      [name]: nextValue,
-    }));
+    setForm(
+      (
+        current,
+      ) => ({
+        ...current,
+        [name]:
+          nextValue,
+      }),
+    );
 
-    setErrors((current) => ({
-      ...current,
-      [name]: undefined,
-      dob:
-        name.startsWith("dob")
-          ? undefined
-          : current.dob,
-      address:
-        name === "township" ||
-        name === "region"
-          ? undefined
-          : current.address,
-      submit: undefined,
-    }));
+    setErrors(
+      (
+        current,
+      ) => ({
+        ...current,
+        [name]:
+          undefined,
+
+        dob:
+          name.startsWith(
+            "dob",
+          )
+            ? undefined
+            : current.dob,
+
+        address:
+          name ===
+            "township" ||
+          name ===
+            "region"
+            ? undefined
+            : current.address,
+
+        submit:
+          undefined,
+      }),
+    );
   };
 
-  const handleFile = async (
-    event: ChangeEvent<HTMLInputElement>,
+  const handleFile = (
+    event:
+      ChangeEvent<HTMLInputElement>,
   ) => {
     const file =
       event.target.files?.[0];
 
     if (!file) {
-      setForm((current) => ({
-        ...current,
-        file: null,
-        image: null,
-      }));
+      if (
+        form.previewUrl
+      ) {
+        URL.revokeObjectURL(
+          form.previewUrl,
+        );
+      }
+
+      setForm(
+        (
+          current,
+        ) => ({
+          ...current,
+          file: null,
+          previewUrl: "",
+        }),
+      );
+
       return;
     }
 
@@ -205,12 +232,19 @@ export default function RegisterPage() {
         file.type,
       )
     ) {
-      setErrors((current) => ({
-        ...current,
-        file:
-          "Only JPG, PNG or WebP images are allowed.",
-      }));
-      event.target.value = "";
+      setErrors(
+        (
+          current,
+        ) => ({
+          ...current,
+          file:
+            "Only JPG, PNG or WebP images are allowed.",
+        }),
+      );
+
+      event.target.value =
+        "";
+
       return;
     }
 
@@ -218,38 +252,56 @@ export default function RegisterPage() {
       file.size >
       MAX_IMAGE_SIZE
     ) {
-      setErrors((current) => ({
-        ...current,
-        file:
-          "Photo must be 2 MB or smaller.",
-      }));
-      event.target.value = "";
+      setErrors(
+        (
+          current,
+        ) => ({
+          ...current,
+          file:
+            "Photo must be 6 MB or smaller.",
+        }),
+      );
+
+      event.target.value =
+        "";
+
       return;
     }
 
-    try {
-      const image =
-        await fileToDataUrl(file);
+    if (
+      form.previewUrl
+    ) {
+      URL.revokeObjectURL(
+        form.previewUrl,
+      );
+    }
 
-      setForm((current) => ({
+    const previewUrl =
+      URL.createObjectURL(
+        file,
+      );
+
+    setForm(
+      (
+        current,
+      ) => ({
         ...current,
         file,
-        image,
-      }));
+        previewUrl,
+      }),
+    );
 
-      setErrors((current) => ({
-        ...current,
-        file: undefined,
-      }));
-    } catch (error) {
-      setErrors((current) => ({
+    setErrors(
+      (
+        current,
+      ) => ({
         ...current,
         file:
-          error instanceof Error
-            ? error.message
-            : "Could not read photo.",
-      }));
-    }
+          undefined,
+        submit:
+          undefined,
+      }),
+    );
   };
 
   const validate =
@@ -257,7 +309,9 @@ export default function RegisterPage() {
       const nextErrors:
         FormErrors = {};
 
-      if (!form.name.trim()) {
+      if (
+        !form.name.trim()
+      ) {
         nextErrors.name =
           "Name is required.";
       } else if (
@@ -269,17 +323,20 @@ export default function RegisterPage() {
           "Please enter the name in English.";
       }
 
-      const day = Number(
-        form.dobDay,
-      );
+      const day =
+        Number(
+          form.dobDay,
+        );
 
-      const month = Number(
-        form.dobMonth,
-      );
+      const month =
+        Number(
+          form.dobMonth,
+        );
 
-      const year = Number(
-        form.dobYear,
-      );
+      const year =
+        Number(
+          form.dobYear,
+        );
 
       const date =
         new Date(
@@ -320,9 +377,12 @@ export default function RegisterPage() {
 
         if (
           monthDifference < 0 ||
-          (monthDifference === 0 &&
+          (
+            monthDifference ===
+              0 &&
             today.getUTCDate() <
-              day)
+              day
+          )
         ) {
           age -= 1;
         }
@@ -366,9 +426,17 @@ export default function RegisterPage() {
       if (!form.file) {
         nextErrors.file =
           "Please choose a photo.";
+      } else if (
+        form.file.size >
+        MAX_IMAGE_SIZE
+      ) {
+        nextErrors.file =
+          "Photo must be 6 MB or smaller.";
       }
 
-      setErrors(nextErrors);
+      setErrors(
+        nextErrors,
+      );
 
       return (
         Object.keys(
@@ -377,116 +445,172 @@ export default function RegisterPage() {
       );
     };
 
-  const handleSubmit = async (
-    event: FormEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault();
-
-    if (
-      submitting ||
-      !validate()
-    ) {
-      return;
-    }
-
-    setSubmitting(true);
-    setErrors({});
-
-    try {
-      const dateOfBirth =
-        `${form.dobYear.padStart(
-          4,
-          "0",
-        )}-${form.dobMonth.padStart(
-          2,
-          "0",
-        )}-${form.dobDay.padStart(
-          2,
-          "0",
-        )}`;
-
-      const response =
-        await fetch(
-          `${API_URL}/student-auth/register`,
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-
-            body: JSON.stringify({
-              name:
-                form.name.trim(),
-
-              dateOfBirth,
-
-              phone:
-                form.phone,
-
-              occupation:
-                form.occupation.trim(),
-
-              township:
-                form.township.trim(),
-
-              region:
-                form.region.trim(),
-
-              image:
-                form.image,
-            }),
-          },
-        );
-
-      const result =
-        await response
-          .json()
-          .catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(
-          getErrorMessage(
-            result,
-          ),
-        );
-      }
-
-      const studentCode =
-        result?.student
-          ?.studentCode;
+  const handleSubmit =
+    async (
+      event:
+        FormEvent<HTMLFormElement>,
+    ) => {
+      event.preventDefault();
 
       if (
-        typeof studentCode !==
-        "string"
+        submitting ||
+        !validate()
       ) {
-        throw new Error(
-          "Student ID was not returned by the server.",
-        );
+        return;
       }
 
-      localStorage.setItem(
-        "registeredStudentCode",
-        studentCode,
+      if (!form.file) {
+        setErrors({
+          file:
+            "Please choose a photo.",
+        });
+
+        return;
+      }
+
+      setSubmitting(
+        true,
       );
 
-      window.alert(
-        `Register Success\nYour Student ID is ${studentCode}\nPlease keep this ID for login.`,
-      );
+      setErrors({});
 
-      router.replace("/");
-    } catch (error) {
-      setErrors({
-        submit:
-          error instanceof Error
-            ? error.message
-            : "Registration failed.",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
+      try {
+        const dateOfBirth =
+          `${form.dobYear.padStart(
+            4,
+            "0",
+          )}-${form.dobMonth.padStart(
+            2,
+            "0",
+          )}-${form.dobDay.padStart(
+            2,
+            "0",
+          )}`;
+
+        /*
+         * IMPORTANT:
+         * Send the actual File through FormData.
+         * Do NOT convert the image to Base64.
+         */
+        const requestBody =
+          new FormData();
+
+        requestBody.append(
+          "name",
+          form.name.trim(),
+        );
+
+        requestBody.append(
+          "dateOfBirth",
+          dateOfBirth,
+        );
+
+        requestBody.append(
+          "phone",
+          form.phone,
+        );
+
+        requestBody.append(
+          "occupation",
+          form.occupation.trim(),
+        );
+
+        requestBody.append(
+          "township",
+          form.township.trim(),
+        );
+
+        requestBody.append(
+          "region",
+          form.region.trim(),
+        );
+
+        requestBody.append(
+          "image",
+          form.file,
+          form.file.name,
+        );
+
+        const response =
+          await fetch(
+            `${API_URL}/student-auth/register`,
+            {
+              method:
+                "POST",
+
+              /*
+               * Do NOT manually set:
+               * Content-Type: multipart/form-data
+               *
+               * The browser adds the correct boundary.
+               */
+              body:
+                requestBody,
+            },
+          );
+
+        const result =
+          await response
+            .json()
+            .catch(
+              () => null,
+            );
+
+        if (!response.ok) {
+          if (
+            response.status ===
+            413
+          ) {
+            throw new Error(
+              "Photo is too large. Maximum allowed size is 6 MB.",
+            );
+          }
+
+          throw new Error(
+            getErrorMessage(
+              result,
+            ),
+          );
+        }
+
+        const studentCode =
+          result?.student
+            ?.studentCode;
+
+        if (
+          typeof studentCode !==
+          "string"
+        ) {
+          throw new Error(
+            "Student ID was not returned by the server.",
+          );
+        }
+
+        localStorage.setItem(
+          "registeredStudentCode",
+          studentCode,
+        );
+
+        window.alert(
+          `Register Success\nYour Student ID is ${studentCode}\nPlease keep this ID for login.`,
+        );
+
+        router.replace(
+          "/",
+        );
+      } catch (error) {
+        setErrors({
+          submit:
+            error instanceof Error
+              ? error.message
+              : "Registration failed.",
+        });
+      } finally {
+        setSubmitting(
+          false,
+        );
+      }
+    };
 
   return (
     <div
@@ -495,8 +619,12 @@ export default function RegisterPage() {
       }
     >
       <form
-        className={styles.form}
-        onSubmit={handleSubmit}
+        className={
+          styles.form
+        }
+        onSubmit={
+          handleSubmit
+        }
         noValidate
       >
         <h1
@@ -516,7 +644,8 @@ export default function RegisterPage() {
                 "14px",
               borderRadius:
                 "7px",
-              color: "#b91c1c",
+              color:
+                "#b91c1c",
               background:
                 "#fef2f2",
             }}
@@ -538,12 +667,18 @@ export default function RegisterPage() {
           type="text"
           name="name"
           placeholder="Enter name in English"
-          value={form.name}
-          onChange={handleChange}
+          value={
+            form.name
+          }
+          onChange={
+            handleChange
+          }
           className={
             styles.input
           }
-          maxLength={100}
+          maxLength={
+            100
+          }
           autoComplete="name"
         />
 
@@ -572,8 +707,12 @@ export default function RegisterPage() {
             type="text"
             name="dobDay"
             placeholder="နေ့"
-            value={form.dobDay}
-            onChange={handleChange}
+            value={
+              form.dobDay
+            }
+            onChange={
+              handleChange
+            }
             className={
               styles.input
             }
@@ -588,7 +727,9 @@ export default function RegisterPage() {
             value={
               form.dobMonth
             }
-            onChange={handleChange}
+            onChange={
+              handleChange
+            }
             className={
               styles.input
             }
@@ -600,8 +741,12 @@ export default function RegisterPage() {
             type="text"
             name="dobYear"
             placeholder="ခုနှစ်"
-            value={form.dobYear}
-            onChange={handleChange}
+            value={
+              form.dobYear
+            }
+            onChange={
+              handleChange
+            }
             className={
               styles.input
             }
@@ -632,8 +777,12 @@ export default function RegisterPage() {
           name="phone"
           maxLength={11}
           placeholder="09xxxxxxxxx"
-          value={form.phone}
-          onChange={handleChange}
+          value={
+            form.phone
+          }
+          onChange={
+            handleChange
+          }
           className={
             styles.input
           }
@@ -664,11 +813,15 @@ export default function RegisterPage() {
           value={
             form.occupation
           }
-          onChange={handleChange}
+          onChange={
+            handleChange
+          }
           className={
             styles.input
           }
-          maxLength={100}
+          maxLength={
+            100
+          }
         />
 
         <small
@@ -699,23 +852,33 @@ export default function RegisterPage() {
             value={
               form.township
             }
-            onChange={handleChange}
+            onChange={
+              handleChange
+            }
             className={
               styles.input
             }
-            maxLength={150}
+            maxLength={
+              150
+            }
           />
 
           <input
             type="text"
             name="region"
             placeholder="ပြည်နယ် / တိုင်း"
-            value={form.region}
-            onChange={handleChange}
+            value={
+              form.region
+            }
+            onChange={
+              handleChange
+            }
             className={
               styles.input
             }
-            maxLength={150}
+            maxLength={
+              150
+            }
           />
         </div>
 
@@ -733,23 +896,31 @@ export default function RegisterPage() {
           }
         >
           (၆) ဓာတ်ပုံထည့်ရန်
+          (Maximum 6 MB)
         </label>
 
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          onChange={handleFile}
+          onChange={
+            handleFile
+          }
           className={`${styles.input} ${styles.fileInput}`}
         />
 
-        {form.image && (
+        {form.previewUrl && (
           <img
-            src={form.image}
+            src={
+              form.previewUrl
+            }
             alt="Student preview"
             style={{
-              width: "90px",
-              height: "90px",
-              marginTop: "10px",
+              width:
+                "90px",
+              height:
+                "90px",
+              marginTop:
+                "10px",
               borderRadius:
                 "50%",
               objectFit:
@@ -771,7 +942,9 @@ export default function RegisterPage() {
             styles.submit
           }
           type="submit"
-          disabled={submitting}
+          disabled={
+            submitting
+          }
         >
           {submitting
             ? "မှတ်ပုံတင်နေသည်..."
@@ -780,11 +953,15 @@ export default function RegisterPage() {
 
         <button
           type="button"
-          className={styles.back}
+          className={
+            styles.back
+          }
           onClick={() =>
             router.back()
           }
-          disabled={submitting}
+          disabled={
+            submitting
+          }
         >
           နောက်သို့ (Back)
         </button>
