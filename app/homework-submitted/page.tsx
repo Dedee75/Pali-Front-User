@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Suspense,
   useEffect,
   useState,
 } from "react";
@@ -117,7 +118,7 @@ function getErrorMessage(
   return "Failed to load submitted homework.";
 }
 
-export default function HomeworkSubmittedPage() {
+function HomeworkSubmittedContent() {
   const router = useRouter();
   const searchParams =
     useSearchParams();
@@ -620,5 +621,23 @@ export default function HomeworkSubmittedPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function HomeworkSubmittedPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className={styles.container}>
+          <div className={styles.mobileFrame}>
+            <div style={{ padding: "50px", textAlign: "center" }}>
+              Loading submitted homework...
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <HomeworkSubmittedContent />
+    </Suspense>
   );
 }

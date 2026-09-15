@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Suspense,
   useEffect,
   useMemo,
   useState,
@@ -114,7 +115,7 @@ function getErrorMessage(
   return "Homework upload failed.";
 }
 
-export default function HomeworkCreatePage() {
+function HomeworkCreateContent() {
   const router = useRouter();
   const searchParams =
     useSearchParams();
@@ -1022,5 +1023,23 @@ export default function HomeworkCreatePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function HomeworkCreatePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className={styles.container}>
+          <div className={styles.mobileFrame}>
+            <div style={{ padding: "50px", textAlign: "center" }}>
+              Loading homework...
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <HomeworkCreateContent />
+    </Suspense>
   );
 }
