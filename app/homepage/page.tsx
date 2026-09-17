@@ -12,6 +12,7 @@ import {
   useRouter,
 } from "next/navigation";
 
+import { confirmAction } from "../../lib/dialog";
 import styles from "./homepage.module.css";
 
 const API_URL = (
@@ -769,6 +770,8 @@ export default function Homepage() {
 
         return;
       }
+
+      if (!(await confirmAction("update", "your profile photo"))) return;
 
       setProfileSaving(
         true,

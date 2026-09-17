@@ -14,6 +14,7 @@ import {
   useRouter,
   useSearchParams,
 } from "next/navigation";
+import { confirmAction } from "../../lib/dialog";
 import styles from "./homework-create.module.css";
 
 const API_URL =
@@ -418,9 +419,11 @@ function HomeworkCreateContent() {
     );
   };
 
-  const handleRemoveImage = (
+  const handleRemoveImage = async (
     imageId: string,
   ) => {
+    if (!(await confirmAction("delete", "this selected photo"))) return;
+
     setImages(
       (current) => {
         const removed =

@@ -10,6 +10,7 @@ import type {
 } from "react";
 import { useRouter } from "next/navigation";
 
+import { showMessage } from "../../lib/dialog";
 import styles from "./register.module.css";
 
 const API_URL = (
@@ -591,7 +592,7 @@ export default function RegisterPage() {
           studentCode,
         );
 
-        window.alert(
+        await showMessage(
           `Register Success\nYour Student ID is ${studentCode}\nPlease keep this ID for login.`,
         );
 
