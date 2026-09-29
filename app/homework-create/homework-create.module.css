@@ -1,189 +1,777 @@
+/** @format */
+
+/* =========================
+   PAGE
+   ========================= */
+
 .container {
-  min-height: 100vh;
-  background-color: #f8f7f4;
-  display: flex;
-  justify-content: center;
+	min-height: 100vh;
+	background-color: #f8f7f4;
+
+	display: flex;
+	justify-content: center;
 }
 
 .mobileFrame {
-  width: 100%;
-  max-width: 430px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  min-height: 100vh;
+	width: 100%;
+	max-width: 430px;
+	min-height: 100vh;
+
+	padding: 20px;
+
+	display: flex;
+	flex-direction: column;
+
+	box-sizing: border-box;
+	position: relative;
 }
 
-/* User Card Styling */
+
+/* =========================
+   LOADING
+   ========================= */
+
+.loading {
+	padding: 50px 20px;
+
+	text-align: center;
+	color: #666;
+
+	font-size: 14px;
+}
+
+
+/* =========================
+   USER CARD
+   ========================= */
+
 .userCard {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  margin-top: 10px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-  border-top: 4px solid #b8860b;
+	width: 100%;
+
+	margin-top: 10px;
+	margin-bottom: 20px;
+
+	padding: 20px;
+
+	background: #ffffff;
+
+	border-top: 4px solid #b8860b;
+	border-radius: 12px;
+
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+
+	box-sizing: border-box;
 }
 
 .greeting {
-  font-size: 20px;
-  font-weight: bold;
-  color: #222;
-  margin: 0 0 8px 0;
+	margin: 0;
+
+	color: #222;
+
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 1.4;
 }
 
-.batchInfo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #666;
+
+/* Student ID + Batch */
+
+.studentMeta {
+	margin-top: 14px;
+
+	display: flex;
+	flex-direction: column;
+
+	gap: 8px;
 }
 
-/* Form Box */
+.metaRow {
+	display: flex;
+	align-items: center;
+
+	gap: 10px;
+
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.metaLabel {
+	width: 75px;
+	flex-shrink: 0;
+
+	color: #777;
+	font-weight: 400;
+}
+
+.metaValue {
+	color: #333;
+	font-weight: 600;
+
+	word-break: break-word;
+}
+
+
+/* =========================
+   FORM CARD
+   ========================= */
+
 .formBox {
-  background: white;
-  border-radius: 12px;
-  padding: 24px 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-  flex: 1; /* Pushes footer down */
-  display: flex;
-  flex-direction: column;
+	width: 100%;
+
+	padding: 24px 20px;
+
+	background: #ffffff;
+
+	border-radius: 12px;
+
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+
+	box-sizing: border-box;
+
+	flex: 1;
+
+	display: flex;
+	flex-direction: column;
 }
+
+.formBox form {
+	width: 100%;
+}
+
+
+/* =========================
+   ERROR
+   ========================= */
+
+.errorBox {
+	width: 100%;
+
+	margin-bottom: 16px;
+	padding: 11px 12px;
+
+	box-sizing: border-box;
+
+	background: #fef2f2;
+	border: 1px solid #fecaca;
+	border-radius: 8px;
+
+	color: #b91c1c;
+
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+
+/* =========================
+   HOMEWORK INFORMATION
+   ========================= */
+
+.homeworkSection {
+	width: 100%;
+
+	margin-bottom: 20px;
+	padding-bottom: 18px;
+
+	border-bottom: 1px solid #eeeeee;
+}
+
+.homeworkTitle {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+
+	gap: 5px;
+
+	color: #333;
+
+	font-size: 16px;
+	line-height: 1.5;
+}
+
+.homeworkTitle span {
+	font-weight: 500;
+}
+
+.homeworkTitle strong {
+	color: #222;
+	font-weight: 700;
+}
+
+
+/* Attachment */
+
+.attachmentLink {
+	display: block;
+
+	margin-top: 14px;
+	padding: 12px 14px;
+
+	background: #fff8e4;
+
+	border: 1px solid #dec77e;
+	border-radius: 8px;
+
+	color: #805900;
+
+	font-size: 13px;
+	line-height: 1.5;
+
+	text-decoration: none;
+
+	overflow-wrap: anywhere;
+}
+
+.attachmentLink:hover {
+	background: #fff3cf;
+}
+
+
+/* =========================
+   FORM GROUP
+   ========================= */
 
 .formGroup {
-  margin-bottom: 20px;
+	width: 100%;
+
+	margin-bottom: 22px;
 }
 
 .label {
-  display: block;
-  font-size: 14px;
-  color: #444;
-  margin-bottom: 8px;
+	display: block;
+
+	margin-bottom: 8px;
+
+	color: #444;
+
+	font-size: 14px;
+	font-weight: 500;
 }
 
-/* Disabled / Read-Only Input */
-.readOnlyInput {
-  width: 100%;
-  background-color: #e9ecef;
-  border: 1px solid #ccc;
-  padding: 14px 16px;
-  border-radius: 8px;
-  font-size: 16px;
-  color: #333;
-  outline: none;
-  box-sizing: border-box;
+
+/* =========================
+   NOTE
+   ========================= */
+
+.uploadNote {
+	width: 100%;
+
+	margin: 0 0 18px 0;
+	padding: 12px 14px;
+
+	display: flex;
+	flex-direction: column;
+
+	gap: 4px;
+
+	box-sizing: border-box;
+
+	background: #fff9e8;
+
+	border-left: 3px solid #c48a00;
+	border-radius: 6px;
+
+	color: #555;
+
+	font-size: 13px;
+	line-height: 1.6;
 }
 
-/* File Input Custom Wrapper */
+.noteTitle {
+	color: #a87400;
+
+	font-size: 13px;
+	font-weight: 700;
+}
+
+
+/* =========================
+   FILE INPUT
+   ========================= */
+
 .fileInputWrapper {
-  width: 100%;
-  background-color: #e9ecef;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
+	width: 100%;
+	min-height: 62px;
+
+	padding: 7px;
+
+	display: flex;
+	align-items: center;
+
+	box-sizing: border-box;
+
+	background-color: #fffdf8;
+
+	border: 2px dashed #c48a00;
+	border-radius: 9px;
+
+	transition:
+		background-color 0.2s ease,
+		border-color 0.2s ease,
+		box-shadow 0.2s ease;
+}
+
+.fileInputWrapper:hover {
+	background-color: #fff9e9;
+	border-color: #a97600;
+
+	box-shadow: 0 0 0 3px rgba(196, 138, 0, 0.07);
 }
 
 .fileInput {
-  width: 100%;
-  padding: 6px;
-  color: #555;
-  cursor: pointer;
+	width: 100%;
+
+	padding: 3px;
+
+	box-sizing: border-box;
+
+	color: #555;
+
+	font-family: inherit;
+	font-size: 13px;
+
+	cursor: pointer;
 }
 
+.fileInput:disabled {
+	cursor: not-allowed;
+	opacity: 0.6;
+}
+
+
+/* Choose Files Button */
+
 .fileInput::file-selector-button {
-  background-color: white;
-  border: 1px solid #555;
-  border-radius: 6px;
-  padding: 8px 16px;
-  margin-right: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
+	min-height: 42px;
+
+	margin-right: 10px;
+	padding: 0 16px;
+
+	background-color: #ffffff;
+
+	border: 1.5px solid #c48a00;
+	border-radius: 7px;
+
+	color: #8b6200;
+
+	font-family: inherit;
+	font-size: 13px;
+	font-weight: 600;
+
+	cursor: pointer;
+
+	transition:
+		background-color 0.2s ease,
+		color 0.2s ease;
 }
 
 .fileInput::file-selector-button:hover {
-  background-color: #f5f5f5;
+	background-color: #c48a00;
+	color: #ffffff;
 }
 
-/* Image Previews Grid */
+
+/* File Help */
+
+.fileHelp {
+	margin: 8px 0 0;
+
+	color: #777;
+
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+
+/* =========================
+   PREVIEW GRID
+   ========================= */
+
 .previewGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 25px;
+	width: 100%;
+
+	margin-bottom: 24px;
+
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+
+	gap: 10px;
 }
 
 .previewWrapper {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  border-radius: 4px;
-  border: 1px solid #ddd;
+	position: relative;
+
+	width: 100%;
+	aspect-ratio: 3 / 4;
+
+	background: #f8f8f8;
+
+	border: 1px solid #dddddd;
+	border-radius: 7px;
+
+	overflow: visible;
 }
 
 .previewImg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 4px;
+	width: 100%;
+	height: 100%;
+
+	display: block;
+
+	object-fit: cover;
+
+	border-radius: 6px;
 }
+
+
+/* Preview Number */
+
+.previewNumber {
+	position: absolute;
+
+	left: 6px;
+	bottom: 6px;
+
+	min-width: 24px;
+
+	padding: 2px 6px;
+
+	box-sizing: border-box;
+
+	background: rgba(0, 0, 0, 0.65);
+
+	border-radius: 10px;
+
+	color: #ffffff;
+
+	font-size: 12px;
+	font-weight: 500;
+	text-align: center;
+}
+
+
+/* =========================
+   PDF PREVIEW
+   ========================= */
+
+.pdfPreview {
+	width: 100%;
+	height: 100%;
+
+	padding: 14px 8px;
+
+	box-sizing: border-box;
+
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+
+	gap: 8px;
+
+	background: #fff7e7;
+
+	border-radius: 6px;
+
+	color: #8a6118;
+
+	text-align: center;
+
+	overflow-wrap: anywhere;
+}
+
+.pdfPreview strong {
+	font-size: 22px;
+}
+
+.pdfPreview span {
+	width: 100%;
+
+	font-size: 11px;
+
+	overflow-wrap: anywhere;
+}
+
+.pdfPreview small {
+	color: #756b5d;
+
+	font-size: 9px;
+	line-height: 1.4;
+}
+
+
+/* =========================
+   DELETE PREVIEW BUTTON
+   ========================= */
 
 .deleteBtn {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 50%;
-  width: 22px;
-  height: 22px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  padding: 0;
+	position: absolute;
+
+	top: -7px;
+	right: -7px;
+
+	width: 24px;
+	height: 24px;
+
+	padding: 0;
+
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	background: #ffffff;
+
+	border: 1px solid #cccccc;
+	border-radius: 50%;
+
+	color: #333;
+
+	cursor: pointer;
+
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+
+	z-index: 2;
+
+	transition:
+		background-color 0.2s ease,
+		color 0.2s ease,
+		border-color 0.2s ease;
 }
 
-.deleteBtn:hover {
-  background: #f0f0f0;
+.deleteBtn:hover:not(:disabled) {
+	background: #fff1f1;
+	border-color: #ef4444;
+
+	color: #dc2626;
 }
 
-/* Upload Button */
+.deleteBtn:disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
+}
+
+
+/* =========================
+   UPLOAD BUTTON
+   ========================= */
+
 .btnUpload {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  background-color: #b8860b;
-  color: white;
-  border: none;
-  padding: 14px;
-  border-radius: 8px;
-  font-size: 18px;
-  font-weight: bold;
-  cursor: pointer;
-  margin-top: 10px;
-  transition: background-color 0.2s;
+	width: 100%;
+	min-height: 54px;
+
+	padding: 12px 16px;
+
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	gap: 10px;
+
+	margin-top: 6px;
+
+	background-color: #c48a00;
+
+	border: 1px solid #c48a00;
+	border-radius: 8px;
+
+	color: #ffffff;
+
+	font-family: inherit;
+	font-size: 17px;
+	font-weight: 700;
+
+	cursor: pointer;
+
+	transition:
+		background-color 0.2s ease,
+		border-color 0.2s ease,
+		opacity 0.2s ease,
+		transform 0.15s ease;
 }
 
-.btnUpload:hover {
-  background-color: #a37622;
+
+/* File ရွေးပြီးမှ hover လုပ်နိုင်မယ် */
+
+.btnUpload:hover:not(:disabled) {
+	background-color: #a97600;
+	border-color: #a97600;
 }
 
-/* Footer */
+
+/* File မရွေးရသေးတဲ့အချိန် */
+
+.btnUpload:disabled {
+	background-color: #ead7a8;
+	border-color: #ead7a8;
+
+	color: rgba(255, 255, 255, 0.95);
+
+	cursor: not-allowed;
+
+	opacity: 0.75;
+}
+
+
+/* =========================
+   BACK BUTTON
+   ========================= */
+
+.btnBack {
+	width: 100%;
+	min-height: 48px;
+
+	margin-top: 12px;
+	padding: 11px 16px;
+
+	background: transparent;
+
+	border: 1px solid #b8860b;
+	border-radius: 8px;
+
+	color: #b8860b;
+
+	font-family: inherit;
+	font-size: 15px;
+	font-weight: 600;
+
+	cursor: pointer;
+
+	transition:
+		background-color 0.2s ease,
+		color 0.2s ease;
+}
+
+.btnBack:hover:not(:disabled) {
+	background-color: #fff9e8;
+}
+
+.btnBack:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+
+/* =========================
+   FOOTER
+   ========================= */
+
 .footer {
-  text-align: center;
-  padding: 30px 0 20px;
-  font-size: 13px;
-  color: #888;
-  margin-top: auto;
+	margin-top: auto;
+
+	padding: 30px 0 20px;
+
+	color: #999;
+
+	font-size: 12px;
+	text-align: center;
 }
-.pdfPreview { min-height: 180px; height: 100%; padding: 24px 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: #fff7e7; color: #8a6118; text-align: center; overflow-wrap: anywhere; }
-.pdfPreview strong { font-size: 24px; }
-.pdfPreview small { color: #756b5d; }
+
+
+/* =========================
+   MOBILE
+   ========================= */
+
+@media (max-width: 480px) {
+	.mobileFrame {
+		padding: 14px 10px;
+	}
+
+	.userCard {
+		margin-top: 4px;
+		margin-bottom: 16px;
+
+		padding: 18px 16px;
+	}
+
+	.greeting {
+		font-size: 19px;
+	}
+
+	.formBox {
+		padding: 22px 16px;
+	}
+
+	.homeworkTitle {
+		font-size: 15px;
+	}
+
+	.uploadNote {
+		padding: 11px 12px;
+
+		font-size: 12px;
+	}
+
+	.fileInputWrapper {
+		min-height: 58px;
+
+		padding: 6px;
+	}
+
+	.fileInput {
+		font-size: 12px;
+	}
+
+	.fileInput::file-selector-button {
+		min-height: 40px;
+
+		padding: 0 12px;
+
+		font-size: 12px;
+	}
+
+	.previewGrid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+
+		gap: 8px;
+	}
+
+	.btnUpload {
+		min-height: 52px;
+
+		font-size: 16px;
+	}
+
+	.btnBack {
+		min-height: 46px;
+
+		font-size: 14px;
+	}
+}
+
+
+/* =========================
+   VERY SMALL MOBILE
+   ========================= */
+
+@media (max-width: 360px) {
+	.mobileFrame {
+		padding: 10px 8px;
+	}
+
+	.userCard,
+	.formBox {
+		padding-left: 14px;
+		padding-right: 14px;
+	}
+
+	.greeting {
+		font-size: 18px;
+	}
+
+	.metaRow {
+		font-size: 12px;
+	}
+
+	.metaLabel {
+		width: 68px;
+	}
+
+	.fileInput::file-selector-button {
+		padding: 0 9px;
+
+		font-size: 11px;
+	}
+
+	.fileInput {
+		font-size: 11px;
+	}
+}

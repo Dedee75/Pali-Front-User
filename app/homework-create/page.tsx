@@ -2,7 +2,7 @@
 
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { confirmAction } from '../../lib/dialog';
@@ -23,11 +23,16 @@ type StudentProfile = {
 
 type SelectedImage = {
 	id: string;
-	file: File;
+	file?: File;
+	existingId?: number;
 	previewUrl: string;
 };
 
 type HomeworkDetail = {
+ canEdit?: boolean;
+ submission?: {images: {id:number; image:string}[] } | null;
+	attachment?: string | null;
+	attachmentName?: string | null;
 	id: number;
 	title: string;
 	description: string;
@@ -86,22 +91,18 @@ function HomeworkCreateContent() {
 	const homeworkId = searchParams.get('homeworkId');
 
 	const [student, setStudent] = useState<StudentProfile | null>(null);
-
 	const [homework, setHomework] = useState<HomeworkDetail | null>(null);
-
 	const [images, setImages] = useState<SelectedImage[]>([]);
-
+ const imageRefs = useRef<SelectedImage[]>([]);
+ useEffect(() => { imageRefs.current = images; }, [images]);
 	const [loading, setLoading] = useState(true);
-
 	const [uploading, setUploading] = useState(false);
-
 	const [error, setError] = useState('');
 
 	const remainingSlots = useMemo(() => MAX_IMAGES - images.length, [images.length]);
 
 	useEffect(() => {
 		const token = localStorage.getItem('studentAccessToken');
-
 		const storedStudent = localStorage.getItem('student');
 
 		if (!token || !storedStudent) {
@@ -147,12 +148,17 @@ function HomeworkCreateContent() {
 					throw new Error(getErrorMessage(result));
 				}
 
-				if (result.status === 'REVIEWED') {
+				if (result.status === 'REVIEWED' || result.canEdit === false) {
 					router.replace(`/homework-submitted?homeworkId=${homeworkId}`);
 					return;
 				}
 
 				setHomework(result as HomeworkDetail);
+                const removed = new URLSearchParams(window.location.search).get('removedImageIds')?.split(',').map(Number) ?? [];
+                setImages((result.submission?.images ?? []).filter((image: {id:number}) => !removed.includes(image.id)).map((image: {id:number; image:string}) => ({
+                    id: `existing-${image.id}`, existingId: image.id,
+                    previewUrl: /^https?:/.test(image.image) ? image.image : `${API_URL.replace(/\/$/, '')}/${image.image.replace(/^\//, '')}`,
+                })));
 			} catch (requestError) {
 				setError(requestError instanceof Error ? requestError.message : 'Failed to load homework.');
 			} finally {
@@ -165,11 +171,11 @@ function HomeworkCreateContent() {
 
 	useEffect(() => {
 		return () => {
-			for (const image of images) {
+			for (const image of imageRefs.current) {
 				URL.revokeObjectURL(image.previewUrl);
 			}
 		};
-	}, [images]);
+	}, []);
 
 	const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
 		const selectedFiles = Array.from(event.target.files ?? []);
@@ -198,7 +204,7 @@ function HomeworkCreateContent() {
 			const duplicate =
 				images.some(
 					(image) =>
-						image.file.name === file.name &&
+						image.file?.name === file.name &&
 						image.file.size === file.size &&
 						image.file.lastModified === file.lastModified,
 				) ||
@@ -220,9 +226,7 @@ function HomeworkCreateContent() {
 
 		const newImages = allowedFiles.map((file) => ({
 			id: `${file.name}-${file.size}-${file.lastModified}`,
-
 			file,
-
 			previewUrl: URL.createObjectURL(file),
 		}));
 
@@ -230,7 +234,9 @@ function HomeworkCreateContent() {
 	};
 
 	const handleRemoveImage = async (imageId: string) => {
-		if (!(await confirmAction('delete', 'this selected photo'))) return;
+		if (!(await confirmAction('delete', 'this selected photo'))) {
+			return;
+		}
 
 		setImages((current) => {
 			const removed = current.find((image) => image.id === imageId);
@@ -280,18 +286,14 @@ function HomeworkCreateContent() {
 			startedAt,
 		});
 
-		/*
-		 * Loading page ကို ချက်ချင်းဖွင့်ပေးပြီး
-		 * upload request ကို background မှာ
-		 * ဆက်လုပ်ပါမယ်။
-		 */
 		router.push(`/upload-loading?homeworkId=${homeworkId}`);
 
 		try {
 			const formData = new FormData();
+            formData.append('retainedImageIds', JSON.stringify(images.filter(image => image.existingId !== undefined).map(image => image.existingId)));
 
 			for (const image of images) {
-				formData.append('images', image.file);
+				if (image.file) formData.append('images', image.file);
 			}
 
 			const response = await fetch(`${API_URL}/student-homeworks/${homeworkId}/submit`, {
@@ -338,10 +340,6 @@ function HomeworkCreateContent() {
 				finishedAt: Date.now(),
 			});
 
-			/*
-			 * Loading route ပြောင်းမသွားခဲ့ရင်
-			 * မူလ page မှာ error ပြနိုင်ရန်။
-			 */
 			setError(message);
 		} finally {
 			setUploading(false);
@@ -352,13 +350,7 @@ function HomeworkCreateContent() {
 		return (
 			<div className={styles.container}>
 				<div className={styles.mobileFrame}>
-					<div
-						style={{
-							padding: '50px',
-							textAlign: 'center',
-						}}>
-						Loading homework...
-					</div>
+					<div className={styles.loading}>Loading homework...</div>
 				</div>
 			</div>
 		);
@@ -370,57 +362,61 @@ function HomeworkCreateContent() {
 				<div className={styles.userCard}>
 					<h1 className={styles.greeting}>မင်္ဂလာပါ, {student?.name ?? 'Student'}</h1>
 
-					<div className={styles.batchInfo}>
-						<svg
-							width='16'
-							height='16'
-							viewBox='0 0 24 24'
-							fill='none'
-							stroke='#b8860b'
-							strokeWidth='2'
-							strokeLinecap='round'
-							strokeLinejoin='round'>
-							<path d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2' />
-							<circle cx='9' cy='7' r='4' />
-							<path d='M23 21v-2a4 4 0 0 0-3-3.87' />
-							<path d='M16 3.13a4 4 0 0 1 0 7.75' />
-						</svg>
+					<div className={styles.studentMeta}>
+						<div className={styles.metaRow}>
+							<span className={styles.metaLabel}>Student ID</span>
 
-						<span>{homework?.batch.name ?? `Batch ${student?.batchId ?? ''}`}</span>
+							<span className={styles.metaValue}>{student?.studentCode ?? '-'}</span>
+						</div>
+
+						<div className={styles.metaRow}>
+							<span className={styles.metaLabel}>Batch</span>
+
+							<span className={styles.metaValue}>{homework?.batch.name ?? `Batch ${student?.batchId ?? ''}`}</span>
+						</div>
 					</div>
 				</div>
 
 				<div className={styles.formBox}>
 					<form onSubmit={handleUpload}>
-						{error && (
-							<div
-								style={{
-									padding: '10px 12px',
-									marginBottom: '14px',
-									borderRadius: '8px',
-									color: '#b91c1c',
-									background: '#fef2f2',
-								}}>
-								{error}
+						{error && <div className={styles.errorBox}>{error}</div>}
+
+						{/* Homework Information */}
+
+						<div className={styles.homeworkSection}>
+							<div className={styles.homeworkTitle}>
+								<span>Homework</span>
+
+								<strong>- {homework?.title ?? '-'}</strong>
 							</div>
-						)}
 
-						<div className={styles.formGroup}>
-							<label className={styles.label}>Homework</label>
-
-							<input type='text' className={styles.readOnlyInput} value={homework?.title ?? ''} readOnly />
+							{homework?.attachment && (
+								<a
+									className={styles.attachmentLink}
+									href={`${API_URL.replace(/\/$/, '')}${homework.attachment}`}
+									target='_blank'
+									rel='noopener noreferrer'>
+									📎 {homework.attachmentName || 'Download homework attachment'}
+								</a>
+							)}
 						</div>
 
-						<div className={styles.formGroup}>
-							<label className={styles.label}>Student ID</label>
-
-							<input type='text' className={styles.readOnlyInput} value={student?.studentCode ?? ''} readOnly />
-						</div>
+						{/* Upload Section */}
 
 						<div className={styles.formGroup}>
+							{/* Note */}
+
+							<div className={styles.uploadNote}>
+								<span className={styles.noteTitle}>Note:</span>
+
+								<span>အိမ်စာကို ပြီးအောင်လုပ်ပြီး ကြည်လင်ပြတ်သားတဲ့ ဓာတ်ပုံများကို တင်ပေးပါ။</span>
+							</div>
+
 							<label className={styles.label}>
 								Homework Images / PDF ({MIN_IMAGES} - {MAX_IMAGES})
 							</label>
+
+							{/* Choose File */}
 
 							<div className={styles.fileInputWrapper}>
 								<input
@@ -433,12 +429,7 @@ function HomeworkCreateContent() {
 								/>
 							</div>
 
-							<p
-								style={{
-									margin: '8px 0 0',
-									color: '#666',
-									fontSize: '13px',
-								}}>
+							<p className={styles.fileHelp}>
 								Selected: {images.length} / {MAX_IMAGES}. Each file must be 5 MB or smaller. PDF pages are
 								converted to images; maximum 20 pages in total.
 							</p>
@@ -448,10 +439,12 @@ function HomeworkCreateContent() {
 							<div className={styles.previewGrid}>
 								{images.map((image, index) => (
 									<div key={image.id} className={styles.previewWrapper}>
-										{image.file.type === 'application/pdf' ?
+										{image.file?.type === 'application/pdf' ?
 											<div className={styles.pdfPreview}>
 												<strong>PDF</strong>
+
 												<span>{image.file.name}</span>
+
 												<small>Pages will appear as images after upload.</small>
 											</div>
 										:	<img
@@ -461,21 +454,7 @@ function HomeworkCreateContent() {
 											/>
 										}
 
-										<span
-											style={{
-												position: 'absolute',
-												left: '6px',
-												bottom: '6px',
-												minWidth: '24px',
-												padding: '2px 6px',
-												borderRadius: '10px',
-												color: '#fff',
-												background: 'rgba(0,0,0,.65)',
-												fontSize: '12px',
-												textAlign: 'center',
-											}}>
-											{index + 1}
-										</span>
+										<span className={styles.previewNumber}>{index + 1}</span>
 
 										<button
 											type='button'
@@ -488,11 +467,12 @@ function HomeworkCreateContent() {
 												height='14'
 												viewBox='0 0 24 24'
 												fill='none'
-												stroke='black'
+												stroke='currentColor'
 												strokeWidth='3'
 												strokeLinecap='round'
 												strokeLinejoin='round'>
 												<line x1='18' y1='6' x2='6' y2='18' />
+
 												<line x1='6' y1='6' x2='18' y2='18' />
 											</svg>
 										</button>
@@ -512,29 +492,19 @@ function HomeworkCreateContent() {
 								strokeLinecap='round'
 								strokeLinejoin='round'>
 								<path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' />
+
 								<polyline points='17 8 12 3 7 8' />
+
 								<line x1='12' y1='3' x2='12' y2='15' />
 							</svg>
 
-							{uploading ? 'Uploading...' : `Upload ${images.length} File(s)`}
+							{uploading ? 'သိမ်းနေသည်...' : homework?.submission ? 'Update (ပြင်ဆင်မည်)' : 'တင်မည်'}
 						</button>
 
-						<button
-							type='button'
-							onClick={() => router.back()}
-							disabled={uploading}
-							style={{
-								width: '100%',
-								marginTop: '12px',
-								padding: '11px',
-								border: '1px solid #b8860b',
-								borderRadius: '7px',
-								color: '#b8860b',
-								background: 'transparent',
-								cursor: uploading ? 'not-allowed' : 'pointer',
-								fontWeight: 600,
-							}}>
-							Back
+						{/* Back */}
+
+						<button type='button' className={styles.btnBack} onClick={() => router.back()} disabled={uploading}>
+							ပြန်ထွက်မည်
 						</button>
 					</form>
 				</div>
@@ -551,7 +521,7 @@ export default function HomeworkCreatePage() {
 			fallback={
 				<div className={styles.container}>
 					<div className={styles.mobileFrame}>
-						<div style={{ padding: '50px', textAlign: 'center' }}>Loading homework...</div>
+						<div className={styles.loading}>Loading homework...</div>
 					</div>
 				</div>
 			}>

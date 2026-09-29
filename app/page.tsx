@@ -1,5 +1,3 @@
-/** @format */
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,240 +5,368 @@ import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './login.module.css';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 
 function getErrorMessage(result: unknown): string {
-	if (result && typeof result === 'object' && 'message' in result) {
-		const message = (
-			result as {
-				message?: unknown;
-			}
-		).message;
+    if (result && typeof result === 'object' && 'message' in result) {
+        const message = (result as { message?: unknown }).message;
 
-		if (Array.isArray(message)) {
-			return message.join(', ');
-		}
+        if (Array.isArray(message)) {
+            return message.join(', ');
+        }
 
-		if (typeof message === 'string') {
-			return message;
-		}
-	}
+        if (typeof message === 'string') {
+            return message;
+        }
+    }
 
-	return 'Login failed.';
+    return 'Login failed.';
 }
 
 export default function LoginPage() {
-	const router = useRouter();
+    const router = useRouter();
 
-	const [studentId, setStudentId] = useState('');
+    const [studentId, setStudentId] = useState('');
+    const [phone, setPhone] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-	const [phone, setPhone] = useState('');
+    const [registrationEnabled, setRegistrationEnabled] = useState(false);
+    const [registrationSettingLoading, setRegistrationSettingLoading] = useState(true);
 
-	const [error, setError] = useState('');
+    // Restore the last registered student code from this browser.
+    useEffect(() => {
+        const registeredId = localStorage.getItem('registeredStudentCode');
 
-	const [loading, setLoading] = useState(false);
+        if (registeredId) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setStudentId(registeredId);
+        }
+    }, []);
 
-	useEffect(() => {
-		const registeredId = localStorage.getItem('registeredStudentCode');
+    // Read the public registration setting.
+    // Register button is shown only when registration is enabled.
+    useEffect(() => {
+        let cancelled = false;
 
-		if (registeredId) {
-			// Restore browser-only saved input after hydration.
-			// eslint-disable-next-line react-hooks/set-state-in-effect
-			setStudentId(registeredId);
-		}
-	}, []);
+        const fetchRegistrationSetting = async () => {
+            try {
+                const response = await fetch(`${API_URL}/system-settings/public`, {
+                    method: 'GET',
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                    cache: 'no-store',
+                });
 
-	const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
+                const result: unknown = await response.json().catch(() => null);
 
-		if (loading) {
-			return;
-		}
+                if (!response.ok) {
+                    throw new Error('Failed to load registration setting.');
+                }
 
-		setError('');
+                const data = result as {
+                    studentRegistrationEnabled?: boolean;
+                } | null;
 
-		const studentCode = studentId.trim().toUpperCase().replace(/\s+/g, '');
+                if (!cancelled) {
+                    setRegistrationEnabled(
+                        data?.studentRegistrationEnabled === true,
+                    );
+                }
+            } catch (fetchError) {
+                console.error(
+                    'Failed to load registration setting:',
+                    fetchError,
+                );
 
-		const normalizedPhone = phone.replace(/\D/g, '');
+                // Fail closed: do not show Register when the setting
+                // cannot be loaded.
+                if (!cancelled) {
+                    setRegistrationEnabled(false);
+                }
+            } finally {
+                if (!cancelled) {
+                    setRegistrationSettingLoading(false);
+                }
+            }
+        };
 
-		if (!/^[A-Z0-9-]{1,20}$/.test(studentCode)) {
-			setError('Enter your full Student ID (e.g. MY26-00001).');
-			return;
-		}
+        void fetchRegistrationSetting();
 
-		if (!/^09\d{7,9}$/.test(normalizedPhone)) {
-			setError('Phone must start with 09 and contain 9 to 11 digits.');
-			return;
-		}
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
-		setLoading(true);
+    const handleLogin = async (
+        event: FormEvent<HTMLFormElement>,
+    ) => {
+        event.preventDefault();
 
-		try {
-			const response = await fetch(`${API_URL}/student-auth/login`, {
-				method: 'POST',
+        if (loading) {
+            return;
+        }
 
-				headers: {
-					'Content-Type': 'application/json',
-				},
+        setError('');
 
-				body: JSON.stringify({
-					studentCode,
-					phone: normalizedPhone,
-				}),
-			});
+        const studentCode = studentId
+            .trim()
+            .toUpperCase()
+            .replace(/\s+/g, '');
 
-			const result = await response.json().catch(() => null);
+        const normalizedPhone = phone.replace(/\D/g, '');
 
-			if (!response.ok) {
-				throw new Error(getErrorMessage(result));
-			}
+        if (!/^[A-Z0-9-]{1,20}$/.test(studentCode)) {
+            setError(
+                'Enter your full Student ID (e.g. MY26-00001).',
+            );
+            return;
+        }
 
-			if (!result?.accessToken || !result?.student) {
-				throw new Error('Invalid login response from server.');
-			}
+        if (!normalizedPhone) {
+            setError('Please enter your phone number.');
+            return;
+        }
 
-			localStorage.setItem('studentAccessToken', result.accessToken);
+        setLoading(true);
 
-			localStorage.setItem('student', JSON.stringify(result.student));
+        try {
+            const response = await fetch(
+                `${API_URL}/student-auth/login`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        studentCode,
+                        phone: normalizedPhone,
+                    }),
+                },
+            );
 
-			localStorage.setItem('registeredStudentCode', result.student.studentCode);
+            const result = await response
+                .json()
+                .catch(() => null);
 
-			router.replace('/homepage');
-		} catch (error) {
-			setError(error instanceof Error ? error.message : 'Login failed.');
-		} finally {
-			setLoading(false);
-		}
-	};
+            if (!response.ok) {
+                throw new Error(getErrorMessage(result));
+            }
 
-	return (
-		<div className={styles.container}>
-			<div className={styles.mobileFrame}>
-				<div className={styles.header}>
-					<div className={styles.logoWrapper}>
-						<svg
-							width='60'
-							height='60'
-							viewBox='0 0 24 24'
-							fill='none'
-							stroke='white'
-							strokeWidth='1.5'
-							strokeLinecap='round'
-							strokeLinejoin='round'>
-							<path d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20' />
-							<path d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z' />
+            if (!result?.accessToken || !result?.student) {
+                throw new Error(
+                    'Invalid login response from server.',
+                );
+            }
 
-							<text x='12' y='14' fill='white' fontSize='10' stroke='none' textAnchor='middle' fontWeight='bold'>
-								A
-							</text>
-						</svg>
-					</div>
+            localStorage.setItem(
+                'studentAccessToken',
+                result.accessToken,
+            );
 
-					<h1 className={styles.title}>Pali Homework System</h1>
+            localStorage.setItem(
+                'student',
+                JSON.stringify(result.student),
+            );
 
-					<p className={styles.subtitle}>Homework Management System</p>
-				</div>
+            localStorage.setItem(
+                'registeredStudentCode',
+                result.student.studentCode,
+            );
 
-				<form className={styles.form} onSubmit={handleLogin} noValidate>
-					{error && (
-						<div
-							style={{
-								padding: '10px 12px',
-								marginBottom: '16px',
-								borderRadius: '7px',
-								color: '#b91c1c',
-								background: '#fef2f2',
-								fontSize: '14px',
-							}}>
-							{error}
-						</div>
-					)}
+            router.replace('/homepage');
+        } catch (loginError) {
+            setError(
+                loginError instanceof Error
+                    ? loginError.message
+                    : 'Login failed.',
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
 
-					<div className={styles.formGroup}>
-						<label className={styles.label}>Student ID</label>
+    return (
+        <div className={styles.container}>
+            <div className={styles.mobileFrame}>
+                <div className={styles.header}>
+                    <div className={styles.logoWrapper}>
+                        <svg
+                            width='60'
+                            height='60'
+                            viewBox='0 0 24 24'
+                            fill='none'
+                            stroke='white'
+                            strokeWidth='1.5'
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                        >
+                            <path d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20' />
+                            <path d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z' />
 
-						<div className={styles.inputWrapper}>
-							<svg className={styles.icon} viewBox='0 0 24 24' fill='#b8860b' width='20' height='20'>
-								<path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z' />
-							</svg>
+                            <text
+                                x='12'
+                                y='14'
+                                fill='white'
+                                fontSize='10'
+                                stroke='none'
+                                textAnchor='middle'
+                                fontWeight='bold'
+                            >
+                                A
+                            </text>
+                        </svg>
+                    </div>
 
-							<input
-								type='text'
-								className={styles.inputFull}
-								placeholder='MY26-00001'
-								maxLength={20}
-								value={studentId}
-								onChange={(event) => {
-									setStudentId(event.target.value);
+                    <h1 className={styles.title}>
+                        Pali Homework System
+                    </h1>
 
-									setError('');
-								}}
-								autoCapitalize='characters'
-								spellCheck={false}
-								autoComplete='username'
-								required
-							/>
-						</div>
-					</div>
+                    <p className={styles.subtitle}>
+                        Homework Management System
+                    </p>
+                </div>
 
-					<div className={styles.formGroup}>
-						<label className={styles.label}>Phone Number (ဖုန်းနံပါတ်)</label>
+                <form
+                    className={styles.form}
+                    onSubmit={handleLogin}
+                    noValidate
+                >
+                    {error && (
+                        <div
+                            style={{
+                                padding: '10px 12px',
+                                marginBottom: '16px',
+                                borderRadius: '7px',
+                                color: '#b91c1c',
+                                background: '#fef2f2',
+                                fontSize: '14px',
+                            }}
+                        >
+                            {error}
+                        </div>
+                    )}
 
-						<div className={styles.inputWrapper}>
-							<svg
-								className={styles.icon}
-								viewBox='0 0 24 24'
-								fill='none'
-								stroke='#b8860b'
-								strokeWidth='2'
-								width='20'
-								height='20'>
-								<path d='M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z' />
-							</svg>
+                    <div className={styles.formGroup}>
+                        <label className={styles.label}>
+                            Student ID
+                        </label>
 
-							<input
-								type='tel'
-								className={styles.inputFull}
-								placeholder='09779953380'
-								maxLength={11}
-								value={phone}
-								onChange={(event) => {
-									setPhone(event.target.value.replace(/\D/g, ''));
+                        <div className={styles.inputWrapper}>
+                            <svg
+                                className={styles.icon}
+                                viewBox='0 0 24 24'
+                                fill='#b8860b'
+                                width='20'
+                                height='20'
+                            >
+                                <path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z' />
+                            </svg>
 
-									setError('');
-								}}
-								inputMode='numeric'
-								autoComplete='tel'
-								required
-							/>
-						</div>
-					</div>
+                            <input
+                                type='text'
+                                className={styles.inputFull}
+                                placeholder='MY26-00001'
+                                maxLength={20}
+                                value={studentId}
+                                onChange={(event) => {
+                                    setStudentId(
+                                        event.target.value,
+                                    );
+                                    setError('');
+                                }}
+                                autoCapitalize='characters'
+                                spellCheck={false}
+                                autoComplete='username'
+                                required
+                            />
+                        </div>
+                    </div>
 
-					<button type='submit' className={styles.submitBtn} disabled={loading}>
-						{loading ? 'ဝင်ရောက်နေသည်...' : 'Login (ဝင်မည်)'}
-					</button>
+                    <div className={styles.formGroup}>
+                        <label className={styles.label}>
+                            Phone Number (ဖုန်းနံပါတ်)
+                        </label>
 
-					<button
-						type='button'
-						onClick={() => router.push('/register')}
-						disabled={loading}
-						style={{
-							width: '100%',
-							marginTop: '12px',
-							padding: '11px 14px',
-							border: '1px solid #b8860b',
-							borderRadius: '7px',
-							color: '#b8860b',
-							background: 'transparent',
-							cursor: loading ? 'not-allowed' : 'pointer',
-							fontWeight: 600,
-						}}>
-						Register New Student (မှတ်ပုံတင်မည်)
-					</button>
-				</form>
+                        <div className={styles.inputWrapper}>
+                            <svg
+                                className={styles.icon}
+                                viewBox='0 0 24 24'
+                                fill='none'
+                                stroke='#b8860b'
+                                strokeWidth='2'
+                                width='20'
+                                height='20'
+                            >
+                                <path d='M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z' />
+                            </svg>
 
-				<div className={styles.footer}>O-Technique-Myanmar-2026@</div>
-			</div>
-		</div>
-	);
+                            <input
+                                type='tel'
+                                className={styles.inputFull}
+                                placeholder='09779953380'
+                                maxLength={30}
+                                value={phone}
+                                onChange={(event) => {
+                                    setPhone(
+                                        event.target.value.replace(
+                                            /\D/g,
+                                            '',
+                                        ),
+                                    );
+                                    setError('');
+                                }}
+                                inputMode='numeric'
+                                autoComplete='tel'
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        type='submit'
+                        className={styles.submitBtn}
+                        disabled={loading}
+                    >
+                        {loading
+                            ? 'ဝင်ရောက်နေသည်...'
+                            : 'Login (ဝင်မည်)'}
+                    </button>
+
+                    {!registrationSettingLoading &&
+                        registrationEnabled && (
+                            <button
+                                type='button'
+                                onClick={() =>
+                                    router.push('/register')
+                                }
+                                disabled={loading}
+                                style={{
+                                    width: '100%',
+                                    marginTop: '12px',
+                                    padding: '11px 14px',
+                                    border:
+                                        '1px solid #b8860b',
+                                    borderRadius: '7px',
+                                    color: '#b8860b',
+                                    background: 'transparent',
+                                    cursor: loading
+                                        ? 'not-allowed'
+                                        : 'pointer',
+                                    fontWeight: 600,
+                                }}
+                            >
+                                Register New Student
+                                (မှတ်ပုံတင်မည်)
+                            </button>
+                        )}
+                </form>
+
+                <div className={styles.footer}>
+                    O-Technique-Myanmar-2026@
+                </div>
+            </div>
+        </div>
+    );
 }
