@@ -3,7 +3,7 @@
 
 /* =========================
    PAGE
-   ========================= */
+========================= */
 
 .container {
 	width: 100%;
@@ -17,13 +17,10 @@
 }
 
 
-/* =========================
-   MOBILE FRAME
-   ========================= */
-
 .mobileFrame {
 	width: 100%;
 	max-width: 430px;
+
 	min-height: 100vh;
 	min-height: 100dvh;
 
@@ -40,7 +37,7 @@
 
 /* =========================
    LOADING
-   ========================= */
+========================= */
 
 .loadingState {
 	width: 100%;
@@ -52,16 +49,18 @@
 	color: #777;
 
 	font-size: 14px;
+
 	text-align: center;
 }
 
 
 /* =========================
    USER CARD
-   ========================= */
+========================= */
 
 .userCard {
 	margin-top: 10px;
+
 	margin-bottom: 30px;
 
 	padding: 20px;
@@ -69,11 +68,17 @@
 	background: #ffffff;
 
 	border: 1px solid #eee7d8;
-	border-top: 4px solid #b8860b;
+
+	border-top:
+		4px solid #b8860b;
+
 	border-radius: 12px;
 
-	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+	box-shadow:
+		0 2px 10px
+		rgba(0, 0, 0, 0.03);
 }
+
 
 .greeting {
 	margin: 0 0 8px;
@@ -81,12 +86,16 @@
 	color: #222222;
 
 	font-size: 20px;
+
 	font-weight: 700;
+
 	line-height: 1.4;
 }
 
+
 .batchInfo {
 	display: flex;
+
 	align-items: center;
 
 	gap: 8px;
@@ -98,8 +107,8 @@
 
 
 /* =========================
-   SECTION TITLE
-   ========================= */
+   TITLE
+========================= */
 
 .sectionTitle {
 	margin: 0 0 18px;
@@ -107,25 +116,30 @@
 	padding-left: 10px;
 
 	display: flex;
+
 	align-items: center;
 
-	border-left: 3px solid #b8860b;
+	border-left:
+		3px solid #b8860b;
 
 	color: #333333;
 
 	font-size: 17px;
+
 	font-weight: 700;
+
 	line-height: 1.45;
 }
 
 
 /* =========================
    ATTACHMENT
-   ========================= */
+========================= */
 
 .attachmentContainer {
 	margin-bottom: 16px;
 }
+
 
 .attachmentLink {
 	width: 100%;
@@ -135,18 +149,22 @@
 	box-sizing: border-box;
 
 	display: flex;
+
 	align-items: center;
 
 	gap: 8px;
 
 	background: #ffffff;
 
-	border: 1px solid #e6d9b7;
+	border:
+		1px solid #e6d9b7;
+
 	border-radius: 9px;
 
 	color: #8b6508;
 
 	font-size: 13px;
+
 	font-weight: 600;
 
 	text-decoration: none;
@@ -154,9 +172,12 @@
 	overflow-wrap: anywhere;
 
 	transition:
-		background-color 0.2s ease,
-		border-color 0.2s ease;
+		background-color
+			0.2s ease,
+		border-color
+			0.2s ease;
 }
+
 
 .attachmentLink:hover {
 	background: #fffaf0;
@@ -167,7 +188,7 @@
 
 /* =========================
    ERROR
-   ========================= */
+========================= */
 
 .errorMessage {
 	margin-bottom: 14px;
@@ -177,6 +198,7 @@
 	background: #fef2f2;
 
 	border: 1px solid #fecaca;
+
 	border-radius: 8px;
 
 	color: #b91c1c;
@@ -187,52 +209,72 @@
 
 /* =========================
    SUBMISSION INFO
-   ========================= */
+========================= */
 
 .submissionInfo {
 	width: 100%;
 
 	margin-bottom: 16px;
+
 	padding: 14px;
 
 	box-sizing: border-box;
 
 	display: flex;
+
 	flex-direction: column;
 
 	background: #fffaf0;
 
-	border: 1px solid #ead8a6;
+	border:
+		1px solid #ead8a6;
+
 	border-radius: 10px;
 }
+
 
 .infoRow {
 	min-height: 36px;
 
 	display: flex;
+
 	align-items: center;
-	justify-content: space-between;
+
+	justify-content:
+		space-between;
 
 	gap: 15px;
 }
 
+
 .infoRow + .infoRow {
-	border-top: 1px dashed rgba(184, 134, 11, 0.16);
+	border-top:
+		1px dashed
+		rgba(
+			184,
+			134,
+			11,
+			0.16
+		);
 }
+
 
 .infoLabel {
 	color: #777777;
 
 	font-size: 12px;
+
 	font-weight: 600;
 }
 
+
 .infoValue {
-	max-width: 65%;
+	max-width: 68%;
 
 	color: #333333;
 
 	font-size: 12px;
+
 	font-weight: 600;
 
 	text-align: right;
@@ -241,8 +283,9 @@
 
 /* =========================
    STATUS
-   ========================= */
+========================= */
 
+.statusNotSubmitted,
 .statusSubmitted,
 .statusReviewed {
 	padding: 5px 10px;
@@ -250,102 +293,114 @@
 	border-radius: 999px;
 
 	font-size: 11px;
+
 	font-weight: 700;
 }
+
+
+.statusNotSubmitted {
+	background: #f1f1f1;
+
+	border:
+		1px solid #d8d8d8;
+
+	color: #555555;
+}
+
 
 .statusSubmitted {
 	background: #fff0be;
 
-	border: 1px solid #ebcf74;
+	border:
+		1px solid #ebcf74;
 
 	color: #8a6200;
 }
 
+
 .statusReviewed {
 	background: #e8f6ec;
 
-	border: 1px solid #c8e7d0;
+	border:
+		1px solid #c8e7d0;
 
 	color: #23783a;
 }
 
+
 .imageCount {
 	min-width: 30px;
+
 	height: 24px;
 
 	padding: 0 8px;
 
 	display: inline-flex;
+
 	align-items: center;
+
 	justify-content: center;
 
 	box-sizing: border-box;
 
 	background: #ffffff;
 
-	border: 1px solid #e5d7af;
+	border:
+		1px solid #e5d7af;
+
 	border-radius: 999px;
 
 	color: #8a6200;
 
 	font-size: 11px;
+
 	font-weight: 800;
 }
 
 
 /* =========================
-   TEACHER COMMENT
-   ========================= */
+   REVIEW RESULT
+========================= */
 
-.teacherComment {
-	padding: 11px 0;
-
-	border-top: 1px dashed rgba(184, 134, 11, 0.16);
-}
-
-.teacherComment p {
-	margin: 7px 0 0;
-
-	color: #333333;
-
-	font-size: 13px;
-	line-height: 1.6;
-
-	overflow-wrap: anywhere;
-}
-
-
-/* =========================
-   UPDATE NOTICE
-   ========================= */
-
-.updateNotice {
+.reviewResultCard {
 	width: 100%;
 
 	margin-bottom: 20px;
-	padding: 12px 13px;
+
+	padding: 16px 14px;
 
 	box-sizing: border-box;
 
 	display: flex;
+
 	align-items: flex-start;
 
-	gap: 10px;
+	gap: 12px;
 
 	background: #ffffff;
 
-	border: 1px solid #e8ddbf;
-	border-radius: 10px;
+	border:
+		1px solid #eadfca;
+
+	border-radius: 12px;
+
+	box-shadow:
+		0 1px 4px
+		rgba(0, 0, 0, 0.03);
 }
 
-.updateNoticeIcon {
-	width: 30px;
-	height: 30px;
+
+.reviewIcon {
+	width: 32px;
+
+	height: 32px;
 
 	flex-shrink: 0;
 
 	display: flex;
+
 	align-items: center;
+
 	justify-content: center;
 
 	background: #fff4d6;
@@ -355,8 +410,115 @@
 	color: #9b6e06;
 
 	font-size: 15px;
+
 	font-weight: 700;
 }
+
+
+.reviewResultContent {
+	width: 100%;
+
+	display: flex;
+
+	flex-direction: column;
+
+	gap: 10px;
+}
+
+
+.reviewResultRow {
+	display: grid;
+
+	grid-template-columns:
+		75px 1fr;
+
+	gap: 10px;
+
+	align-items: start;
+}
+
+
+.reviewResultRow > span {
+	color: #555555;
+
+	font-size: 13px;
+}
+
+
+.reviewResultRow strong {
+	color: #111111;
+
+	font-size: 14px;
+
+	font-weight: 500;
+}
+
+
+.reviewResultRow p {
+	margin: 0;
+
+	color: #444444;
+
+	font-size: 13px;
+
+	line-height: 1.6;
+
+	overflow-wrap: anywhere;
+}
+
+
+/* =========================
+   UPDATE NOTICE
+========================= */
+
+.updateNotice {
+	width: 100%;
+
+	margin-bottom: 20px;
+
+	padding: 12px 13px;
+
+	box-sizing: border-box;
+
+	display: flex;
+
+	align-items: flex-start;
+
+	gap: 10px;
+
+	background: #ffffff;
+
+	border:
+		1px solid #e8ddbf;
+
+	border-radius: 10px;
+}
+
+
+.updateNoticeIcon {
+	width: 30px;
+
+	height: 30px;
+
+	flex-shrink: 0;
+
+	display: flex;
+
+	align-items: center;
+
+	justify-content: center;
+
+	background: #fff4d6;
+
+	border-radius: 50%;
+
+	color: #9b6e06;
+
+	font-size: 15px;
+
+	font-weight: 700;
+}
+
 
 .updateNotice strong {
 	display: block;
@@ -368,29 +530,35 @@
 	font-size: 12px;
 }
 
+
 .updateNotice p {
 	margin: 0;
 
 	color: #777777;
 
 	font-size: 11px;
+
 	line-height: 1.6;
 }
 
 
 /* =========================
    IMAGE HEADER
-   ========================= */
+========================= */
 
 .imageHeader {
 	margin: 5px 0 12px;
 
 	display: flex;
+
 	align-items: center;
-	justify-content: space-between;
+
+	justify-content:
+		space-between;
 
 	gap: 15px;
 }
+
 
 .imageHeader h3 {
 	margin: 0;
@@ -398,8 +566,10 @@
 	color: #333333;
 
 	font-size: 14px;
+
 	font-weight: 700;
 }
+
 
 .imageHeader span {
 	padding: 4px 9px;
@@ -411,24 +581,31 @@
 	color: #666666;
 
 	font-size: 10px;
+
 	font-weight: 700;
 }
 
 
 /* =========================
    IMAGE GRID
-   ========================= */
+========================= */
 
 .imageGrid {
 	width: 100%;
 
 	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
+
+	grid-template-columns:
+		repeat(
+			2,
+			minmax(0, 1fr)
+		);
 
 	gap: 15px;
 
 	margin-bottom: 24px;
 }
+
 
 .imageWrapper {
 	position: relative;
@@ -439,16 +616,22 @@
 
 	background: #ffffff;
 
-	border: 1px solid #eaeaea;
+	border:
+		1px solid #eaeaea;
+
 	border-radius: 10px;
 
 	overflow: hidden;
 
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+	box-shadow:
+		0 2px 8px
+		rgba(0, 0, 0, 0.05);
 }
+
 
 .submittedImg {
 	width: 100%;
+
 	height: 100%;
 
 	display: block;
@@ -460,46 +643,68 @@
 
 
 /* =========================
-   REMOVE IMAGE BUTTON
-   ========================= */
+   REMOVE BUTTON
+========================= */
 
 .removeImageBtn {
 	position: absolute;
 
 	top: 8px;
+
 	right: 8px;
 
 	z-index: 10;
 
 	width: 30px;
+
 	height: 30px;
 
 	padding: 0;
 
 	display: flex;
+
 	align-items: center;
+
 	justify-content: center;
 
-	background: rgba(220, 38, 38, 0.94);
+	background:
+		rgba(
+			220,
+			38,
+			38,
+			0.94
+		);
 
-	border: 2px solid #ffffff;
+	border:
+		2px solid #ffffff;
+
 	border-radius: 50%;
 
 	color: #ffffff;
 
-	font-family: Arial, sans-serif;
+	font-family:
+		Arial,
+		sans-serif;
+
 	font-size: 20px;
+
 	font-weight: 700;
+
 	line-height: 1;
 
 	cursor: pointer;
 
-	box-shadow: 0 2px 7px rgba(0, 0, 0, 0.22);
+	box-shadow:
+		0 2px 7px
+		rgba(0, 0, 0, 0.22);
 
 	transition:
-		background-color 0.2s ease,
-		transform 0.15s ease;
+		background-color
+			0.2s ease,
+		transform
+			0.15s ease;
 }
+
 
 .removeImageBtn:hover {
 	background: #b91c1c;
@@ -507,37 +712,41 @@
 	transform: scale(1.08);
 }
 
+
 .removeImageBtn:active {
 	transform: scale(0.95);
-}
-
-.removeImageBtn:focus-visible {
-	outline: 3px solid rgba(220, 38, 38, 0.25);
-	outline-offset: 2px;
 }
 
 
 /* =========================
    PAGE BADGE
-   ========================= */
+========================= */
 
 .pageBadge {
 	position: absolute;
 
 	left: 7px;
+
 	bottom: 7px;
 
 	z-index: 5;
 
 	padding: 4px 8px;
 
-	background: rgba(0, 0, 0, 0.68);
+	background:
+		rgba(
+			0,
+			0,
+			0,
+			0.68
+		);
 
 	border-radius: 12px;
 
 	color: #ffffff;
 
 	font-size: 11px;
+
 	font-weight: 600;
 
 	pointer-events: none;
@@ -546,23 +755,28 @@
 
 /* =========================
    EMPTY IMAGE
-   ========================= */
+========================= */
 
 .emptyImages {
 	width: 100%;
 
 	margin-bottom: 24px;
+
 	padding: 32px 20px;
 
 	box-sizing: border-box;
 
 	display: flex;
+
 	flex-direction: column;
+
 	align-items: center;
 
 	background: #ffffff;
 
-	border: 1px dashed #d8d8d8;
+	border:
+		1px dashed #d8d8d8;
+
 	border-radius: 12px;
 
 	color: #777777;
@@ -570,11 +784,13 @@
 	text-align: center;
 }
 
+
 .emptyIcon {
 	margin-bottom: 8px;
 
 	font-size: 28px;
 }
+
 
 .emptyImages strong {
 	color: #444444;
@@ -582,47 +798,57 @@
 	font-size: 13px;
 }
 
+
 .emptyImages p {
 	margin: 6px 0 0;
 
 	color: #888888;
 
 	font-size: 11px;
+
 	line-height: 1.5;
 }
 
 
 /* =========================
    CHANGE INFO
-   ========================= */
+========================= */
 
 .changeInfo {
 	width: 100%;
 
 	margin-bottom: 15px;
+
 	padding: 10px 12px;
 
 	box-sizing: border-box;
 
 	display: flex;
+
 	align-items: flex-start;
 
 	gap: 8px;
 
 	background: #fff7ed;
 
-	border: 1px solid #fed7aa;
+	border:
+		1px solid #fed7aa;
+
 	border-radius: 9px;
 }
 
+
 .changeInfo > span {
 	width: 20px;
+
 	height: 20px;
 
 	flex-shrink: 0;
 
 	display: flex;
+
 	align-items: center;
+
 	justify-content: center;
 
 	background: #f59e0b;
@@ -632,8 +858,10 @@
 	color: #ffffff;
 
 	font-size: 11px;
+
 	font-weight: 800;
 }
+
 
 .changeInfo p {
 	margin: 0;
@@ -641,13 +869,35 @@
 	color: #9a5b0b;
 
 	font-size: 11px;
+
 	line-height: 1.5;
 }
 
 
 /* =========================
-   BUTTON CONTAINER
-   ========================= */
+   LOCK MESSAGE
+========================= */
+
+.lockedMessage {
+	margin: 0;
+
+	padding: 11px 12px;
+
+	background: #f7f7f7;
+
+	border-radius: 8px;
+
+	color: #666;
+
+	font-size: 12px;
+
+	line-height: 1.5;
+}
+
+
+/* =========================
+   BUTTONS
+========================= */
 
 .buttonContainer {
 	flex: 1;
@@ -655,48 +905,63 @@
 	margin-top: 15px;
 
 	display: flex;
+
 	flex-direction: column;
+
 	justify-content: flex-end;
 
 	gap: 10px;
 }
 
 
-/* =========================
-   UPDATE BUTTON
-   ========================= */
-
 .btnUpdate {
 	width: 100%;
+
 	min-height: 52px;
 
 	padding: 14px 16px;
 
 	display: flex;
+
 	align-items: center;
+
 	justify-content: center;
 
 	gap: 9px;
 
 	background: #b8860b;
 
-	border: 1px solid #b8860b;
+	border:
+		1px solid #b8860b;
+
 	border-radius: 12px;
 
 	color: #ffffff;
 
 	font-size: 15px;
+
 	font-weight: 700;
 
 	cursor: pointer;
 
-	box-shadow: 0 4px 8px rgba(184, 134, 11, 0.2);
+	box-shadow:
+		0 4px 8px
+		rgba(
+			184,
+			134,
+			11,
+			0.2
+		);
 
 	transition:
-		background-color 0.2s ease,
-		border-color 0.2s ease,
-		transform 0.15s ease;
+		background-color
+			0.2s ease,
+		border-color
+			0.2s ease,
+		transform
+			0.15s ease;
 }
+
 
 .btnUpdate:hover {
 	background: #a37622;
@@ -704,44 +969,51 @@
 	border-color: #a37622;
 }
 
+
 .btnUpdate:active {
 	transform: scale(0.985);
 }
 
 
-/* =========================
-   BACK BUTTON
-   ========================= */
-
 .btnBack {
 	width: 100%;
+
 	min-height: 52px;
 
 	padding: 14px 16px;
 
 	display: flex;
+
 	align-items: center;
+
 	justify-content: center;
 
 	gap: 10px;
 
 	background: #ffffff;
 
-	border: 1px solid #d7c79c;
+	border:
+		1px solid #d7c79c;
+
 	border-radius: 12px;
 
 	color: #8b6508;
 
 	font-size: 15px;
+
 	font-weight: 700;
 
 	cursor: pointer;
 
 	transition:
-		background-color 0.2s ease,
-		border-color 0.2s ease,
-		transform 0.15s ease;
+		background-color
+			0.2s ease,
+		border-color
+			0.2s ease,
+		transform
+			0.15s ease;
 }
+
 
 .btnBack:hover {
 	background: #fffaf0;
@@ -749,20 +1021,15 @@
 	border-color: #b8860b;
 }
 
+
 .btnBack:active {
 	transform: scale(0.985);
-}
-
-.btnUpdate:focus-visible,
-.btnBack:focus-visible {
-	outline: 3px solid rgba(184, 134, 11, 0.2);
-	outline-offset: 2px;
 }
 
 
 /* =========================
    FOOTER
-   ========================= */
+========================= */
 
 .footer {
 	padding: 30px 0 20px;
@@ -770,40 +1037,58 @@
 	color: #888888;
 
 	font-size: 12px;
+
 	text-align: center;
 }
 
 
 /* =========================
-   SMALL PHONE
-   ========================= */
+   MOBILE
+========================= */
 
-@media (max-width: 380px) {
+@media (
+	max-width: 380px
+) {
 	.mobileFrame {
 		padding: 14px;
 	}
+
 
 	.userCard {
 		padding: 17px;
 	}
 
+
 	.greeting {
 		font-size: 18px;
 	}
+
 
 	.imageGrid {
 		gap: 10px;
 	}
 
+
 	.removeImageBtn {
 		top: 6px;
+
 		right: 6px;
 
 		width: 28px;
+
 		height: 28px;
 
 		font-size: 18px;
 	}
+
+
+	.reviewResultRow {
+		grid-template-columns:
+			68px 1fr;
+
+		gap: 7px;
+	}
+
 
 	.btnUpdate,
 	.btnBack {

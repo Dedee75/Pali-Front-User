@@ -89,6 +89,7 @@ function HomeworkCreateContent() {
 	const searchParams = useSearchParams();
 
 	const homeworkId = searchParams.get('homeworkId');
+	const isReupload = searchParams.get('mode') === 'upload';
 
 	const [student, setStudent] = useState<StudentProfile | null>(null);
 	const [homework, setHomework] = useState<HomeworkDetail | null>(null);
@@ -498,7 +499,7 @@ function HomeworkCreateContent() {
 								<line x1='12' y1='3' x2='12' y2='15' />
 							</svg>
 
-							{uploading ? 'သိမ်းနေသည်...' : homework?.submission ? 'Update (ပြင်ဆင်မည်)' : 'တင်မည်'}
+							{uploading ? 'သိမ်းနေသည်...' : homework?.status === 'SUBMITTED' && !isReupload ? 'Update (ပြင်ဆင်မည်)' : 'တင်မည်'}
 						</button>
 
 						{/* Back */}
