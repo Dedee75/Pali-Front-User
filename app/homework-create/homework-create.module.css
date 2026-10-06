@@ -201,7 +201,12 @@
 /* Attachment */
 
 .attachmentLink {
-	display: block;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 44px;
+	box-sizing: border-box;
 
 	margin-top: 14px;
 	padding: 12px 14px;
@@ -214,6 +219,7 @@
 	color: #805900;
 
 	font-size: 13px;
+	font-weight: 600;
 	line-height: 1.5;
 
 	text-decoration: none;
@@ -223,6 +229,11 @@
 
 .attachmentLink:hover {
 	background: #fff3cf;
+}
+
+.attachmentLink:focus-visible {
+	outline: 2px solid #805900;
+	outline-offset: 3px;
 }
 
 

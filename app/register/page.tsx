@@ -11,7 +11,7 @@ import styles from './register.module.css';
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 
-const MAX_IMAGE_SIZE = 6 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 15 * 1024 * 1024;
 
 type FormState = {
 	name: string;
@@ -135,7 +135,7 @@ export default function RegisterPage() {
 		if (file.size > MAX_IMAGE_SIZE) {
 			setErrors((current) => ({
 				...current,
-				file: 'Photo must be 6 MB or smaller.',
+				file: 'Photo must be 15 MB or smaller.',
 			}));
 
 			event.target.value = '';
@@ -220,7 +220,7 @@ export default function RegisterPage() {
 		if (!form.file) {
 			nextErrors.file = 'Please choose a photo.';
 		} else if (form.file.size > MAX_IMAGE_SIZE) {
-			nextErrors.file = 'Photo must be 6 MB or smaller.';
+			nextErrors.file = 'Photo must be 15 MB or smaller.';
 		}
 
 		setErrors(nextErrors);
@@ -290,7 +290,7 @@ export default function RegisterPage() {
 
 			if (!response.ok) {
 				if (response.status === 413) {
-					throw new Error('Photo is too large. Maximum allowed size is 6 MB.');
+					throw new Error('Photo is too large. Maximum allowed size is 15 MB.');
 				}
 
 				throw new Error(getErrorMessage(result));
@@ -444,7 +444,7 @@ export default function RegisterPage() {
 
 				<small className={styles.errorText}>{errors.address}</small>
 
-				<label className={styles.label}>(၆) ဓာတ်ပုံထည့်ရန် (Maximum 6 MB)</label>
+				<label className={styles.label}>(၆) ဓာတ်ပုံထည့်ရန် (Maximum 15 MB)</label>
 
 				<input
 					type='file'

@@ -142,15 +142,16 @@
 
 
 .attachmentLink {
-	width: 100%;
+	min-height: 44px;
 
 	padding: 11px 13px;
 
 	box-sizing: border-box;
 
-	display: flex;
+	display: inline-flex;
 
 	align-items: center;
+	justify-content: center;
 
 	gap: 8px;
 
@@ -183,6 +184,11 @@
 	background: #fffaf0;
 
 	border-color: #c48a00;
+}
+
+.attachmentLink:focus-visible {
+	outline: 2px solid #8b6508;
+	outline-offset: 3px;
 }
 
 

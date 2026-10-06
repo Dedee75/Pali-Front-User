@@ -13,7 +13,7 @@ const API_URL = (
 	process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'
 ).replace(/\/$/, '');
 
-const MAX_PROFILE_IMAGE_SIZE = 6 * 1024 * 1024;
+const MAX_PROFILE_IMAGE_SIZE = 15 * 1024 * 1024;
 
 const DEFAULT_STUDENT_IMAGE =
 	'data:image/svg+xml;charset=UTF-8,' +
@@ -551,7 +551,7 @@ export default function Homepage() {
 			MAX_PROFILE_IMAGE_SIZE
 		) {
 			setProfileError(
-				'Photo must be 6 MB or smaller.',
+				'Photo must be 15 MB or smaller.',
 			);
 
 			event.target.value = '';
@@ -1577,7 +1577,7 @@ export default function Homepage() {
 											styles.profileImageHint
 										}>
 										JPG, PNG or WEBP
-										· Maximum 6 MB
+										· Maximum 15 MB
 									</small>
 
 									{profileError && (

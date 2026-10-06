@@ -12,7 +12,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 const MIN_IMAGES = 1;
 const MAX_IMAGES = 20;
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE = 15 * 1024 * 1024;
 
 type StudentProfile = {
 	id: number;
@@ -198,7 +198,7 @@ function HomeworkCreateContent() {
 			}
 
 			if (file.size > MAX_FILE_SIZE) {
-				setError(`${file.name} is larger than 5 MB.`);
+				setError(`${file.name} is larger than 15 MB.`);
 				continue;
 			}
 
@@ -397,7 +397,7 @@ function HomeworkCreateContent() {
 									href={`${API_URL.replace(/\/$/, '')}${homework.attachment}`}
 									target='_blank'
 									rel='noopener noreferrer'>
-									📎 {homework.attachmentName || 'Download homework attachment'}
+									<span aria-hidden='true'>📎</span> အိမ်စာကြည့်ရန်
 								</a>
 							)}
 						</div>
@@ -431,7 +431,7 @@ function HomeworkCreateContent() {
 							</div>
 
 							<p className={styles.fileHelp}>
-								Selected: {images.length} / {MAX_IMAGES}. Each file must be 5 MB or smaller. PDF pages are
+								Selected: {images.length} / {MAX_IMAGES}. Each file must be 15 MB or smaller. PDF pages are
 								converted to images; maximum 20 pages in total.
 							</p>
 						</div>

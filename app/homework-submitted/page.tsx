@@ -636,13 +636,12 @@ function HomeworkSubmittedContent() {
 								styles.attachmentLink
 							}
 						>
-							<span>
+							<span aria-hidden='true'>
 								📎
 							</span>
 
 							<span>
-								{homework.attachmentName ||
-									'Homework attachment'}
+								အိမ်စာကြည့်ရန်
 							</span>
 						</a>
 					</div>
