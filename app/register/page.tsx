@@ -2,6 +2,8 @@
 
 'use client';
 
+import { authClientHeaders } from '@/lib/auth-client';
+
 import { useEffect, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
@@ -276,6 +278,7 @@ export default function RegisterPage() {
 
 			const response = await fetch(`${API_URL}/student-auth/register`, {
 				method: 'POST',
+				headers: authClientHeaders(),
 
 				/*
 				 * Do NOT manually set:

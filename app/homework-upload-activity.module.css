@@ -1,0 +1,23 @@
+.tray {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  width: min(380px, calc(100vw - 32px));
+  max-height: 40vh;
+  overflow-y: auto;
+  z-index: 100;
+  background: #fffdf8;
+  border: 1px solid #d8c89e;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px #30230b24;
+  color: #594320;
+  font-size: 13px;
+}
+.item { padding: 14px 16px; }
+.item + .item { border-top: 1px solid #e7dfcd; }
+.item p { margin: 8px 0; line-height: 1.8; }
+.item progress { width: 100%; accent-color: #b8860b; }
+.item small { display: block; margin-top: 6px; line-height: 1.8; }
+.actions { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; }
+.actions a { color: #856000; text-decoration: underline; }
+.actions button { border: 0; background: transparent; color: #665a44; cursor: pointer; font: inherit; }

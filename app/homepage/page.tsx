@@ -1,12 +1,19 @@
 /** @format */
 
 'use client';
+import { useServerPagination } from '../../lib/server-pagination';
+import { EntriesControl, ListPagination } from '../../components/ListPagination';
 
-import { useEffect, useState } from 'react';
+import { PrivateImage } from '@/lib/private-files';
+
+import { useMemo, useEffect, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { isActiveUpload } from '../../lib/homework-uploads';
+import { useHomeworkUploads } from '../../lib/use-homework-uploads';
 
-import { confirmAction } from '../../lib/dialog';
+import { confirmAction, showMessage } from '../../lib/dialog';
 import styles from './homepage.module.css';
 
 const API_URL = (
@@ -52,21 +59,18 @@ type StudentProfile = {
 
 type HomeworkStatus =
 	| 'NOT_SUBMITTED'
+	| 'PROCESSING'
 	| 'SUBMITTED'
 	| 'REVIEWED';
 
 type HomeworkSubmission = {
+ processingError?: string | null;
 	id: number;
 	submittedAt: string | null;
 	totalMarks: number | null;
 	remark: string | null;
 
-	images: Array<{
-		id: number;
-		image: string;
-		marks: number | null;
-		remark: string | null;
-	}>;
+	imageCount: number;
 };
 
 type HomeworkItem = {
@@ -194,6 +198,8 @@ function getStatusText(
 	status: HomeworkStatus,
 ): string {
 	switch (status) {
+		case 'PROCESSING':
+			return 'ပြုပြင်နေပါသည် (Processing)';
 		case 'REVIEWED':
 			return 'စစ်ဆေးပြီး (Reviewed)';
 
@@ -210,13 +216,21 @@ function getStatusText(
 ========================= */
 
 export default function Homepage() {
+ const pager = useServerPagination();
+ const {query: pageQuery, accept: acceptPage} = pager;
+
+
+  const [loggingOut, setLoggingOut] = useState(false);
 	const router = useRouter();
+ const uploads = useHomeworkUploads();
 
 	const [student, setStudent] =
 		useState<StudentProfile | null>(null);
 
-	const [homeworks, setHomeworks] =
+	const [homeworkRows, setHomeworks] =
 		useState<HomeworkItem[]>([]);
+ const homeworks = useMemo(() => pager.isCurrent ? homeworkRows : [], [pager.isCurrent, homeworkRows]);
+
 
 	const [loading, setLoading] =
 		useState(true);
@@ -309,7 +323,7 @@ export default function Homepage() {
 					),
 
 					fetch(
-						`${API_URL}/student-homeworks`,
+						`${API_URL}/student-homeworks?${pageQuery}`,
 						{
 							method: 'GET',
 							headers,
@@ -367,10 +381,8 @@ export default function Homepage() {
 				const profile =
 					profileResult as StudentProfile;
 
-				const homeworkList =
-					Array.isArray(homeworkResult)
-						? (homeworkResult as HomeworkItem[])
-						: [];
+                if (controller.signal.aborted || !acceptPage(homeworkResult, pageQuery)) return;
+                const homeworkList = homeworkResult.data as HomeworkItem[];
 
 				setStudent(profile);
 
@@ -415,15 +427,17 @@ export default function Homepage() {
         void refreshHomepage();
         const refreshTimer = window.setInterval(() => void refreshHomepage(), 15000);
         window.addEventListener('focus', refreshHomepage);
+        window.addEventListener('homework-upload-state', refreshHomepage);
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
             controller.abort();
             window.clearInterval(refreshTimer);
             window.removeEventListener('focus', refreshHomepage);
+            window.removeEventListener('homework-upload-state', refreshHomepage);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-	}, [router]);
+	}, [router, pageQuery, acceptPage]);
 
 	/* =========================
 	   PROFILE PREVIEW CLEANUP
@@ -479,17 +493,30 @@ export default function Homepage() {
 	   LOGOUT
 	========================= */
 
-	const handleLogout = () => {
-		localStorage.removeItem(
-			'studentAccessToken',
-		);
-
-		localStorage.removeItem(
-			'student',
-		);
-
-		router.replace('/');
-	};
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      const token = localStorage.getItem('studentAccessToken');
+      if (token) {
+        const response = await fetch(`${API_URL}/student-auth/logout-all`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token.trim()}` },
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!response.ok && response.status !== 401) {
+          throw new Error('Logout failed');
+        }
+      }
+      localStorage.removeItem('studentAccessToken');
+      localStorage.removeItem('student');
+      router.replace('/');
+    } catch {
+      await showMessage('Logout မပြီးသေးပါ။ အင်တာနက်ချိတ်ဆက်မှုကို စစ်ပြီး ပြန်နှိပ်ပေးပါ။');
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
 	/* =========================
 	   PROFILE
@@ -774,7 +801,7 @@ export default function Homepage() {
 	   LOADING
 	========================= */
 
-	if (loading) {
+	if (loading || (!pager.isCurrent && !error)) {
 		return (
 			<div
 				className={
@@ -885,7 +912,7 @@ export default function Homepage() {
 								}
 								title='My Profile'
 								aria-label='My Profile'>
-								<img
+								<PrivateImage
 									src={resolveStudentImage(
 										student?.image,
 									)}
@@ -920,8 +947,9 @@ export default function Homepage() {
 								onClick={
 									handleLogout
 								}
-								title='Logout'
-								aria-label='Logout'>
+								disabled={loggingOut}
+                                title='စက်အားလုံးမှ Logout'
+								aria-label='စက်အားလုံးမှ Logout'>
 								<svg
 									width='20'
 									height='20'
@@ -972,6 +1000,8 @@ export default function Homepage() {
 					(အိမ်စာများ)
 				</h2>
 
+				<EntriesControl pageSize={pager.pageSize} onChange={pager.setPageSize} />
+
 				{/* =========================
 				    HOMEWORK LIST
 				========================= */}
@@ -993,15 +1023,20 @@ export default function Homepage() {
 							</div>
 						)}
 
-					{homeworks.map(
+                    {homeworks.map(
 						(homework) => {
+                            const activeUpload = uploads.find(job => job.homeworkId === String(homework.id) && isActiveUpload(job));
 							const isNotSubmitted =
 								homework.status ===
-								'NOT_SUBMITTED';
+								'NOT_SUBMITTED' && !activeUpload;
 
 							const isSubmitted =
 								homework.status ===
-								'SUBMITTED';
+								'SUBMITTED' && !activeUpload;
+
+							const isProcessing =
+								Boolean(activeUpload) || homework.status ===
+								'PROCESSING';
 
 							const isReviewed =
 								homework.status ===
@@ -1011,14 +1046,7 @@ export default function Homepage() {
 								homework.totalMarks ??
 								100;
 
-                            // Show the earned score after an admin or teacher finishes review.
-                            const reviewedImages = homework.submission?.images ?? [];
-                            const pageTotal = reviewedImages.length > 0 && reviewedImages.every(image => image.marks != null)
-                                ? reviewedImages.reduce((total, image) => total + (image.marks ?? 0), 0)
-                                : null;
-                            const obtainedMarks = isReviewed
-                                ? homework.submission?.totalMarks ?? pageTotal ?? '-'
-                                : '-';
+                            const obtainedMarks = isReviewed ? homework.submission?.totalMarks ?? '-' : '-';
 
 							return (
 								<div
@@ -1046,19 +1074,27 @@ export default function Homepage() {
 
 										<span
 											className={
-												isNotSubmitted
+											isNotSubmitted
 													? styles.statusNotSubmitted
-													: isSubmitted
+													: isSubmitted || isProcessing
 														? styles.statusSubmitted
 														: styles.statusReviewed
 											}>
-											{getStatusText(
+											{activeUpload?.status === 'uploading' ? `ပို့နေသည် (${activeUpload.progress}%)` : getStatusText(
 												homework.status,
 											)}
 										</span>
 									</div>
 
-									{/* TITLE */}
+									{isProcessing && <div role='status' style={{padding: '12px 0'}}>
+                                        {activeUpload?.status === 'uploading' ? `ဖိုင်များ ပို့နေသည် — ${activeUpload.progress}%` : 'ဖိုင်လက်ခံပြီး၊ PDF နှင့် ပုံများကို ပြင်ဆင်နေပါသည်။'}
+                                        <Link href={`/upload-loading?homeworkId=${homework.id}`}> အခြေအနေကြည့်ရန်</Link>
+                                    </div>}
+                                    {!activeUpload && homework.submission?.processingError && <div role='alert' style={{color: '#a12622', padding: '12px 0'}}>
+                                        <strong>အိမ်စာတင်မှု မအောင်မြင်ပါ။</strong><p>{homework.submission.processingError}</p>
+                                        <Link href={`/homework-create?homeworkId=${homework.id}&mode=upload`}>ဖိုင်ပြန်ရွေးပြီး တင်မည်</Link>
+                                    </div>}
+                                    {/* TITLE */}
 
 									<h3
 										className={
@@ -1234,6 +1270,12 @@ export default function Homepage() {
 										</button>
 									)}
 
+										{isProcessing && (
+											<div className={styles.btnEdit}>
+												{activeUpload?.status === 'uploading' ? 'ဖိုင်များ ပို့နေပါသည်။' : 'အိမ်စာပုံများကို ပြုပြင်နေပါသည်။'}
+											</div>
+										)}
+
 									{/* =========================
 									    REVIEWED BUTTON
 									========================= */}
@@ -1276,6 +1318,8 @@ export default function Homepage() {
 						},
 					)}
 				</div>
+
+				<ListPagination total={pager.total} pageSize={pager.pageSize} currentPage={pager.currentPage} onChange={pager.setCurrentPage} />
 
 				{/* =========================
 				    FOOTER
@@ -1334,7 +1378,7 @@ export default function Homepage() {
 										className={
 											styles.profileModalImageWrapper
 										}>
-										<img
+										<PrivateImage
 											src={
 												profilePreviewUrl ||
 												resolveStudentImage(
@@ -1461,6 +1505,7 @@ export default function Homepage() {
 											{formatProfileDate(
 												student.dateOfBirth,
 											)}
+
 										</span>
 									</div>
 

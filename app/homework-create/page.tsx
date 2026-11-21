@@ -2,17 +2,21 @@
 
 'use client';
 
+import { PrivateImage, PrivateFileLink } from '@/lib/private-files';
+
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { confirmAction } from '../../lib/dialog';
 import styles from './homework-create.module.css';
+import { isActiveUpload, startHomeworkUpload } from '../../lib/homework-uploads';
+import { useHomeworkUploads } from '../../lib/use-homework-uploads';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 const MIN_IMAGES = 1;
-const MAX_IMAGES = 20;
-const MAX_FILE_SIZE = 15 * 1024 * 1024;
+const MAX_IMAGES = 30;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 type StudentProfile = {
 	id: number;
@@ -29,40 +33,21 @@ type SelectedImage = {
 };
 
 type HomeworkDetail = {
+ uploadLimits?: {maxPages: number; maxFiles: number; maxFileBytes: number};
  canEdit?: boolean;
- submission?: {images: {id:number; image:string}[] } | null;
+ submission?: {processingError?: string | null; images: {id:number; image:string}[] } | null;
 	attachment?: string | null;
 	attachmentName?: string | null;
 	id: number;
 	title: string;
 	description: string;
 	dueDate: string;
-	status: 'NOT_SUBMITTED' | 'SUBMITTED' | 'REVIEWED';
+	status: 'NOT_SUBMITTED' | 'PROCESSING' | 'SUBMITTED' | 'REVIEWED';
 	batch: {
 		id: number;
 		name: string;
 	};
 };
-
-type UploadRouteState = {
-	status: 'uploading' | 'success' | 'error';
-	imageCount: number;
-	error?: string;
-	startedAt: number;
-	finishedAt?: number;
-};
-
-function saveUploadRouteState(homeworkId: string, state: UploadRouteState) {
-	sessionStorage.setItem(`homeworkUpload:${homeworkId}`, JSON.stringify(state));
-
-	window.dispatchEvent(
-		new CustomEvent('homework-upload-state', {
-			detail: {
-				homeworkId,
-			},
-		}),
-	);
-}
 
 function getErrorMessage(result: unknown): string {
 	if (result && typeof result === 'object' && 'message' in result) {
@@ -97,10 +82,22 @@ function HomeworkCreateContent() {
  const imageRefs = useRef<SelectedImage[]>([]);
  useEffect(() => { imageRefs.current = images; }, [images]);
 	const [loading, setLoading] = useState(true);
-	const [uploading, setUploading] = useState(false);
+	const uploads = useHomeworkUploads();
+ const uploading = uploads.some(job => job.homeworkId === homeworkId && isActiveUpload(job));
 	const [error, setError] = useState('');
+ const [inspection, setInspection] = useState<{key: string; pageCount?: number; error?: string}>({key: ''});
+ const maxPages = homework?.uploadLimits?.maxPages ?? MAX_IMAGES;
+ const maxFiles = homework?.uploadLimits?.maxFiles ?? MAX_IMAGES;
+ const maxFileBytes = homework?.uploadLimits?.maxFileBytes ?? MAX_FILE_SIZE;
+ const selectionKey = images.map(image => image.id).join('|');
+ const checkingPages = images.length > 0 && inspection.key !== selectionKey;
+ const pageError = inspection.key === selectionKey ? inspection.error : undefined;
 
-	const remainingSlots = useMemo(() => MAX_IMAGES - images.length, [images.length]);
+ useEffect(() => {
+  if (uploading && homeworkId) router.replace(`/upload-loading?homeworkId=${homeworkId}`);
+ }, [uploading, homeworkId, router]);
+
+	const remainingSlots = useMemo(() => maxFiles - images.length, [images.length, maxFiles]);
 
 	useEffect(() => {
 		const token = localStorage.getItem('studentAccessToken');
@@ -149,12 +146,18 @@ function HomeworkCreateContent() {
 					throw new Error(getErrorMessage(result));
 				}
 
+				if (result.status === 'PROCESSING') {
+					router.replace(`/upload-loading?homeworkId=${homeworkId}`);
+					return;
+				}
+
 				if (result.status === 'REVIEWED' || result.canEdit === false) {
 					router.replace(`/homework-submitted?homeworkId=${homeworkId}`);
 					return;
 				}
 
 				setHomework(result as HomeworkDetail);
+                setError(searchParams.get('uploadError') || result.submission?.processingError || '');
                 const removed = new URLSearchParams(window.location.search).get('removedImageIds')?.split(',').map(Number) ?? [];
                 setImages((result.submission?.images ?? []).filter((image: {id:number}) => !removed.includes(image.id)).map((image: {id:number; image:string}) => ({
                     id: `existing-${image.id}`, existingId: image.id,
@@ -168,7 +171,7 @@ function HomeworkCreateContent() {
 		};
 
 		void loadHomework();
-	}, [homeworkId, router]);
+	}, [homeworkId, router, searchParams]);
 
 	useEffect(() => {
 		return () => {
@@ -177,6 +180,34 @@ function HomeworkCreateContent() {
 			}
 		};
 	}, []);
+
+ useEffect(() => {
+  if (loading || !homeworkId || !images.length) return;
+  const controller = new AbortController();
+  const timer = window.setTimeout(async () => {
+   try {
+    const pdfs = images.filter(image => image.file?.type === 'application/pdf');
+    let pageCount = images.length;
+    if (pdfs.length) {
+     const body = new FormData();
+     body.append('imageCount', String(images.length - pdfs.length));
+     for (const pdf of pdfs) body.append('images', pdf.file!);
+     const response = await fetch(`${API_URL}/student-homeworks/${homeworkId}/validate-upload`, {
+      method: 'POST', headers: {Authorization: `Bearer ${localStorage.getItem('studentAccessToken') ?? ''}`},
+      body, signal: controller.signal,
+     });
+     const result = await response.json().catch(() => null);
+     if (!response.ok) throw new Error(getErrorMessage(result));
+     pageCount = result.pageCount;
+    }
+    if (pageCount > maxPages) throw new Error(`စုစုပေါင်း ${pageCount} မျက်နှာ ဖြစ်နေပါတယ်။ အများဆုံး ${maxPages} မျက်နှာသာ ခွင့်ပြုပါတယ်။ ဖိုင်အချို့ကို ဖယ်ပေးပါ။`);
+    if (!controller.signal.aborted) setInspection({key: selectionKey, pageCount});
+   } catch (error) {
+    if (!controller.signal.aborted) setInspection({key: selectionKey, error: error instanceof Error ? error.message : 'PDF စစ်ဆေးမရပါ။ ဖိုင်ပြန်ရွေးပေးပါ။'});
+   }
+  }, 400);
+  return () => {window.clearTimeout(timer); controller.abort();};
+ }, [images, selectionKey, loading, homeworkId, maxPages]);
 
 	const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
 		const selectedFiles = Array.from(event.target.files ?? []);
@@ -197,8 +228,8 @@ function HomeworkCreateContent() {
 				continue;
 			}
 
-			if (file.size > MAX_FILE_SIZE) {
-				setError(`${file.name} is larger than 15 MB.`);
+			if (file.size > maxFileBytes) {
+				setError(`${file.name} is larger than ${maxFileBytes / (1024 * 1024)} MB.`);
 				continue;
 			}
 
@@ -222,7 +253,7 @@ function HomeworkCreateContent() {
 		const allowedFiles = acceptedFiles.slice(0, remainingSlots);
 
 		if (acceptedFiles.length > remainingSlots) {
-			setError(`Only ${remainingSlots} more file(s) can be added. Maximum is ${MAX_IMAGES}.`);
+			setError(`Only ${remainingSlots} more file(s) can be added. Maximum is ${maxFiles}.`);
 		}
 
 		const newImages = allowedFiles.map((file) => ({
@@ -252,10 +283,10 @@ function HomeworkCreateContent() {
 		setError('');
 	};
 
-	const handleUpload = async (event: FormEvent<HTMLFormElement>) => {
+	const handleUpload = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
-		if (uploading || !homeworkId) {
+		if (uploading || checkingPages || pageError || !homeworkId) {
 			return;
 		}
 
@@ -264,8 +295,8 @@ function HomeworkCreateContent() {
 			return;
 		}
 
-		if (images.length > MAX_IMAGES) {
-			setError(`You can upload a maximum of ${MAX_IMAGES} images.`);
+		if (images.length > maxFiles) {
+			setError(`You can upload a maximum of ${maxFiles} image or PDF files.`);
 			return;
 		}
 
@@ -276,75 +307,19 @@ function HomeworkCreateContent() {
 			return;
 		}
 
-		setUploading(true);
-		setError('');
-
-		const startedAt = Date.now();
-
-		saveUploadRouteState(homeworkId, {
-			status: 'uploading',
-			imageCount: images.length,
-			startedAt,
-		});
-
-		router.push(`/upload-loading?homeworkId=${homeworkId}`);
-
-		try {
-			const formData = new FormData();
-            formData.append('retainedImageIds', JSON.stringify(images.filter(image => image.existingId !== undefined).map(image => image.existingId)));
-
-			for (const image of images) {
-				if (image.file) formData.append('images', image.file);
-			}
-
-			const response = await fetch(`${API_URL}/student-homeworks/${homeworkId}/submit`, {
-				method: 'POST',
-
-				headers: {
-					Authorization: `Bearer ${token.trim()}`,
-				},
-
-				body: formData,
-			});
-
-			const result = await response.json().catch(() => null);
-
-			if (response.status === 401) {
-				sessionStorage.removeItem(`homeworkUpload:${homeworkId}`);
-
-				localStorage.removeItem('studentAccessToken');
-
-				localStorage.removeItem('student');
-
-				router.replace('/');
-				return;
-			}
-
-			if (!response.ok) {
-				throw new Error(getErrorMessage(result));
-			}
-
-			saveUploadRouteState(homeworkId, {
-				status: 'success',
-				imageCount: images.length,
-				startedAt,
-				finishedAt: Date.now(),
-			});
-		} catch (uploadError) {
-			const message = uploadError instanceof Error ? uploadError.message : 'Homework upload failed.';
-
-			saveUploadRouteState(homeworkId, {
-				status: 'error',
-				imageCount: images.length,
-				error: message,
-				startedAt,
-				finishedAt: Date.now(),
-			});
-
-			setError(message);
-		} finally {
-			setUploading(false);
-		}
+        setError('');
+        try {
+            startHomeworkUpload({
+                homeworkId,
+                title: homework?.title ?? `အိမ်စာ #${homeworkId}`,
+                files: images.flatMap(image => image.file ? [image.file] : []),
+                retainedImageIds: images.flatMap(image => image.existingId === undefined ? [] : [image.existingId]),
+                pageCount: inspection.pageCount ?? images.length,
+            });
+            router.replace(`/upload-loading?homeworkId=${homeworkId}`);
+        } catch (error) {
+            setError(error instanceof Error ? error.message : 'ဖိုင်တင်မရပါ။ ပြန်ကြိုးစားပေးပါ။');
+        }
 	};
 
 	if (loading) {
@@ -380,7 +355,7 @@ function HomeworkCreateContent() {
 
 				<div className={styles.formBox}>
 					<form onSubmit={handleUpload}>
-						{error && <div className={styles.errorBox}>{error}</div>}
+						{(error || pageError) && <div className={styles.errorBox} role='alert'>{pageError || error}</div>}
 
 						{/* Homework Information */}
 
@@ -392,13 +367,13 @@ function HomeworkCreateContent() {
 							</div>
 
 							{homework?.attachment && (
-								<a
+								<PrivateFileLink
 									className={styles.attachmentLink}
 									href={`${API_URL.replace(/\/$/, '')}${homework.attachment}`}
 									target='_blank'
 									rel='noopener noreferrer'>
 									<span aria-hidden='true'>📎</span> အိမ်စာကြည့်ရန်
-								</a>
+								</PrivateFileLink>
 							)}
 						</div>
 
@@ -414,7 +389,7 @@ function HomeworkCreateContent() {
 							</div>
 
 							<label className={styles.label}>
-								Homework Images / PDF ({MIN_IMAGES} - {MAX_IMAGES})
+								Homework Images / PDF ({MIN_IMAGES} - {maxFiles})
 							</label>
 
 							{/* Choose File */}
@@ -426,63 +401,33 @@ function HomeworkCreateContent() {
 									multiple
 									onChange={handleFileChange}
 									className={styles.fileInput}
-									disabled={uploading || images.length >= MAX_IMAGES}
+									disabled={uploading || images.length >= maxFiles}
 								/>
 							</div>
 
 							<p className={styles.fileHelp}>
-								Selected: {images.length} / {MAX_IMAGES}. Each file must be 15 MB or smaller. PDF pages are
-								converted to images; maximum 20 pages in total.
+								ပုံနှင့် PDF ရောတင်နိုင်ပါသည်။ ဖိုင်တစ်ခုလျှင် {maxFileBytes / (1024 * 1024)} MB အထိ။ ပုံနှင့် PDF စာမျက်နှာ စုစုပေါင်း {maxPages} မျက်နှာအထိ။<br />
+                                ရွေးထားသောဖိုင်: {images.length} / {maxFiles} · {checkingPages ? 'PDF စာမျက်နှာများ စစ်ဆေးနေသည်…' : inspection.key === selectionKey && inspection.pageCount !== undefined ? `စုစုပေါင်း ${inspection.pageCount} မျက်နှာ` : 'ဖိုင်များ ရွေးပေးပါ။'}
 							</p>
 						</div>
 
-						{images.length > 0 && (
-							<div className={styles.previewGrid}>
-								{images.map((image, index) => (
-									<div key={image.id} className={styles.previewWrapper}>
-										{image.file?.type === 'application/pdf' ?
-											<div className={styles.pdfPreview}>
-												<strong>PDF</strong>
+                        {['images', 'pdf'].map(group => {
+                            const items = images.filter(image => (image.file?.type === 'application/pdf' || (!image.file && /-page-\d+(?:-optimized)?\.(?:png|webp)$/.test(image.previewUrl))) === (group === 'pdf'));
+                            if (!items.length) return null;
+                            return <section key={group} className={styles.fileGroup}>
+                                <h3>{group === 'pdf' ? 'PDF ဖိုင်နှင့် စာမျက်နှာများ' : 'ပုံများ'} ({items.length})</h3>
+                                <div className={styles.previewGrid}>
+                                    {items.map(image => <div key={image.id} className={styles.previewWrapper}>
+                                        {image.file?.type === 'application/pdf' ? <div className={styles.pdfPreview}>
+                                            <strong>PDF</strong><span>{image.file.name}</span><small>PDF စာမျက်နှာများကို ပုံအဖြစ် ပြောင်းပေးပါမည်။</small>
+                                        </div> : <PrivateImage src={image.previewUrl} alt='ရွေးထားသော အိမ်စာစာမျက်နှာ' className={styles.previewImg} />}
+                                        <button type='button' className={styles.deleteBtn} onClick={() => handleRemoveImage(image.id)} disabled={uploading} aria-label='ဖိုင်ဖယ်မည်'>×</button>
+                                    </div>)}
+                                </div>
+                            </section>;
+                        })}
 
-												<span>{image.file.name}</span>
-
-												<small>Pages will appear as images after upload.</small>
-											</div>
-										:	<img
-												src={image.previewUrl}
-												alt={`Homework page ${index + 1}`}
-												className={styles.previewImg}
-											/>
-										}
-
-										<span className={styles.previewNumber}>{index + 1}</span>
-
-										<button
-											type='button'
-											className={styles.deleteBtn}
-											onClick={() => handleRemoveImage(image.id)}
-											disabled={uploading}
-											aria-label={`Remove image ${index + 1}`}>
-											<svg
-												width='14'
-												height='14'
-												viewBox='0 0 24 24'
-												fill='none'
-												stroke='currentColor'
-												strokeWidth='3'
-												strokeLinecap='round'
-												strokeLinejoin='round'>
-												<line x1='18' y1='6' x2='6' y2='18' />
-
-												<line x1='6' y1='6' x2='18' y2='18' />
-											</svg>
-										</button>
-									</div>
-								))}
-							</div>
-						)}
-
-						<button type='submit' className={styles.btnUpload} disabled={uploading || images.length < MIN_IMAGES}>
+						<button type='submit' className={styles.btnUpload} disabled={uploading || checkingPages || Boolean(pageError) || images.length < MIN_IMAGES}>
 							<svg
 								width='20'
 								height='20'

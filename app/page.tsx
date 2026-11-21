@@ -1,5 +1,7 @@
 'use client';
 
+import { authClientHeaders } from '@/lib/auth-client';
+
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
@@ -138,6 +140,7 @@ export default function LoginPage() {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        ...authClientHeaders(),
                     },
                     body: JSON.stringify({
                         studentCode,

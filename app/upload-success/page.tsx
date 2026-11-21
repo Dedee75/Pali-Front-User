@@ -2,11 +2,38 @@
 
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './upload-success.module.css';
 
-export default function UploadSuccessPage() {
+function UploadSuccessContent() {
 	const router = useRouter();
+ const homeworkId = useSearchParams().get('homeworkId');
+ const [verified, setVerified] = useState(false);
+ const [error, setError] = useState('');
+ useEffect(() => {
+  if (!homeworkId || !/^\d+$/.test(homeworkId)) {router.replace('/homepage'); return;}
+  const controller = new AbortController();
+  const verify = async () => {
+   try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}/student-homeworks/${homeworkId}`, {
+     headers: {Authorization: `Bearer ${localStorage.getItem('studentAccessToken') ?? ''}`}, cache: 'no-store', signal: controller.signal,
+    });
+    if (response.status === 401) {router.replace('/'); return;}
+    if (!response.ok) throw new Error('အိမ်စာအခြေအနေ စစ်ဆေးမရပါ။');
+    const detail = await response.json();
+    if (controller.signal.aborted) return;
+    if (['SUBMITTED', 'REVIEWED'].includes(detail.status) && !detail.submission?.processingError && detail.submission?.images?.length > 0) setVerified(true);
+    else router.replace(`/upload-loading?homeworkId=${homeworkId}`);
+   } catch {if (!controller.signal.aborted) setError('အိမ်စာအခြေအနေ စစ်ဆေးမရပါ။ ပင်မစာမျက်နှာတွင် ပြန်စစ်ပေးပါ။');}
+  };
+  void verify();
+  return () => controller.abort();
+ }, [homeworkId, router]);
+ if (!verified) return <div className={styles.container}><div className={styles.mobileFrame}>
+  <p role={error ? 'alert' : 'status'}>{error || 'စာမျက်နှာများ သိမ်းဆည်းပြီးကြောင်း စစ်ဆေးနေသည်…'}</p>
+  <button type='button' className={styles.btnHome} onClick={() => router.replace('/homepage')}>ပင်မစာမျက်နှာသို့</button>
+ </div></div>;
 
 	return (
 		<div className={styles.container}>
@@ -53,4 +80,8 @@ export default function UploadSuccessPage() {
 			</div>
 		</div>
 	);
+}
+
+export default function UploadSuccessPage() {
+ return <Suspense fallback={<p>အခြေအနေ စစ်ဆေးနေသည်…</p>}><UploadSuccessContent /></Suspense>;
 }

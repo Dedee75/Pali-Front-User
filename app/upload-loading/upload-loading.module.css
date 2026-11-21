@@ -49,3 +49,14 @@
 	text-align: center;
 	margin: 0;
 }
+
+.actionButton {
+ border: 1px solid #b8860b;
+ border-radius: 8px;
+ padding: 11px 18px;
+ background: #fff;
+ color: #76590f;
+ font: inherit;
+ cursor: pointer;
+}
+.actionButton:hover { background: #f1ead9; }

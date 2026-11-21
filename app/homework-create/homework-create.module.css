@@ -786,3 +786,14 @@
 		font-size: 11px;
 	}
 }
+
+.fileGroup {
+ border-top: 1px solid #ddd5c6;
+ padding-top: 14px;
+ margin-top: 16px;
+}
+.fileGroup h3 {
+ font-size: 14px;
+ color: #5c4b2d;
+ margin: 0 0 12px;
+}

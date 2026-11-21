@@ -2,6 +2,8 @@
 
 'use client';
 
+import { PrivateImage, PrivateFileLink } from '@/lib/private-files';
+
 import {
 	Suspense,
 	useEffect,
@@ -55,6 +57,7 @@ type HomeworkDetail = {
 	totalMarks: number | null;
 
 	status:
+		| 'PROCESSING'
 		| 'NOT_SUBMITTED'
 		| 'SUBMITTED'
 		| 'REVIEWED';
@@ -305,7 +308,11 @@ function HomeworkSubmittedContent() {
 
 
 					const detail =
-						result as HomeworkDetail;
+                        result as HomeworkDetail;
+                    if (detail.status === 'PROCESSING') {
+                        router.replace(`/upload-loading?homeworkId=${homeworkId}`);
+                        return;
+                    }
 
 
 					if (
@@ -626,7 +633,7 @@ function HomeworkSubmittedContent() {
 							styles.attachmentContainer
 						}
 					>
-						<a
+						<PrivateFileLink
 							href={resolveImageUrl(
 								homework.attachment,
 							)}
@@ -643,7 +650,7 @@ function HomeworkSubmittedContent() {
 							<span>
 								အိမ်စာကြည့်ရန်
 							</span>
-						</a>
+						</PrivateFileLink>
 					</div>
 				)}
 
@@ -895,84 +902,20 @@ function HomeworkSubmittedContent() {
 
 				{/* IMAGES */}
 
-				{displayImages.length >
-					0 && (
-					<div
-						className={
-							styles.imageGrid
-						}
-					>
-						{displayImages.map(
-							(
-								image,
-								index,
-							) => (
-								<div
-									key={
-										image.id
-									}
-									className={
-										styles.imageWrapper
-									}
-								>
-
-									{/* REMOVE */}
-
-									{canEdit && (
-										<button
-											type='button'
-											className={
-												styles.removeImageBtn
-											}
-											onClick={() =>
-												handleRemoveImage(
-													image,
-												)
-											}
-											disabled={removing}
-										title='Remove image'
-											aria-label={`Remove page ${
-												index +
-												1
-											}`}
-										>
-											×
-										</button>
-									)}
-
-
-									{/* IMAGE */}
-
-									<img
-										src={resolveImageUrl(
-											image.image,
-										)}
-										alt={`Submitted homework page ${
-											index +
-											1
-										}`}
-										className={
-											styles.submittedImg
-										}
-										loading='lazy'
-									/>
-
-
-									<span
-										className={
-											styles.pageBadge
-										}
-									>
-										Page{' '}
-										{index +
-											1}
-									</span>
-								</div>
-							),
-						)}
-					</div>
-				)}
-
+                {['images', 'pdf'].map(group => {
+                    const items = displayImages.filter(image => /-page-\d+(?:-optimized)?\.(?:png|webp)$/.test(image.image) === (group === 'pdf'));
+                    if (!items.length) return null;
+                    return <section key={group} style={{borderTop: '1px solid #ddd5c6', paddingTop: 14, marginTop: 14}}>
+                        <h4>{group === 'pdf' ? 'PDF မှ စာမျက်နှာများ' : 'ပုံများ'} ({items.length})</h4>
+                        <div className={styles.imageGrid}>
+                            {items.map(image => <div key={image.id} className={styles.imageWrapper}>
+                                {canEdit && <button type='button' className={styles.removeImageBtn} onClick={() => handleRemoveImage(image)} disabled={removing} aria-label='စာမျက်နှာဖယ်မည်'>×</button>}
+                                <PrivateImage src={resolveImageUrl(image.image)} alt='တင်ထားသော အိမ်စာစာမျက်နှာ' className={styles.submittedImg} loading='lazy' />
+                                <span className={styles.pageBadge}>Page {displayImages.indexOf(image) + 1}</span>
+                            </div>)}
+                        </div>
+                    </section>;
+                })}
 
 				{/* EMPTY IMAGE */}
 
