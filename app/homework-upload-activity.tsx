@@ -16,7 +16,7 @@ export default function HomeworkUploadActivity() {
     syncHomeworkUploadAccount();
     checkProcessingHomeworkUploads();
     const timer = window.setInterval(checkProcessingHomeworkUploads, 2000);
-    const refresh = () => checkProcessingHomeworkUploads();
+    const refresh = () => checkProcessingHomeworkUploads(true);
     window.addEventListener('focus', refresh);
     return () => {window.clearInterval(timer); window.removeEventListener('focus', refresh);};
     // Page navigation never aborts a transport. The app-level store owns it.

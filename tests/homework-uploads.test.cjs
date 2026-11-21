@@ -5,12 +5,13 @@ const path = require('node:path');
 const vm = require('node:vm');
 const ts = require('typescript');
 
-function environment(saved) {
+function environment(saved, chunkTransport) {
   const local = new Map([['studentAccessToken', 'student-token'], ['student', JSON.stringify({id: 1})]]);
   const session = new Map(saved);
   const xhrs = [];
   const events = [];
   const responses = [];
+  const fetches = [];
   class Request {
     upload = {};
     status = 0;
@@ -25,12 +26,14 @@ function environment(saved) {
   }
   const exports = {};
   const context = {
-    exports, process: {env: {}}, console, Date, FormData, XMLHttpRequest: Request,
+    require: () => ({sendHomeworkChunks: chunkTransport ?? (() => {throw new Error('Unexpected chunk transport');})}),
+    exports, process: {env: {NEXT_PUBLIC_HOMEWORK_CHUNK_UPLOADS: chunkTransport ? 'true' : 'false'}}, console, Date, FormData, AbortSignal, AbortController, XMLHttpRequest: Request,
     localStorage: {getItem: key => local.get(key) ?? null},
     sessionStorage: {getItem: key => session.get(key) ?? null, setItem: (key, value) => session.set(key, value)},
     CustomEvent: class {constructor(type) {this.type = type;}},
     window: {dispatchEvent: event => events.push(event.type)},
-    fetch: async () => {
+    fetch: async (url, options) => {
+      fetches.push({url, options});
       const response = responses.shift() ?? {status: 'PROCESSING'};
       if (response instanceof Error) throw response;
       return {ok: true, status: 200, json: async () => response};
@@ -39,11 +42,11 @@ function environment(saved) {
   const source = fs.readFileSync(path.resolve(__dirname, '../lib/homework-uploads.ts'), 'utf8');
   const compiled = ts.transpileModule(source, {compilerOptions: {target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS}}).outputText;
   vm.runInNewContext(compiled, context);
-  return {store: exports, xhrs, local, session, events, responses};
+  return {store: exports, xhrs, local, session, events, responses, fetches};
 }
 
 const input = () => ({homeworkId: '3', title: 'အိမ်စာ ၃', files: [new File(['photo'], 'photo.jpg', {type: 'image/jpeg'})], retainedImageIds: [10], pageCount: 2});
-const completed = () => ({status: 'SUBMITTED', submission: {submittedAt: new Date().toISOString(), images: [{id: 11}]}});
+const completed = () => ({status: 'SUBMITTED', submission: {submittedAt: new Date().toISOString(), imageCount: 1}});
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
 test('Back navigation and page unsubscribe keep the upload alive through processing and success', async () => {
@@ -193,4 +196,58 @@ test('an older saved submission cannot mark an active retry as complete', async 
   xhrs[0].complete(201, {status: 'PROCESSING'});
   await tick();
   assert.equal(store.getHomeworkUploads()[0].status, 'processing');
+});
+
+
+test('automatic polling uses the status endpoint, a deadline and a delay between requests', async () => {
+  const {store, xhrs, fetches} = environment();
+  store.startHomeworkUpload(input());
+  xhrs[0].complete(201, {status: 'PROCESSING'});
+  await tick();
+  assert.equal(fetches.length, 1);
+  assert.match(fetches[0].url, /\/student-homeworks\/3\/status$/);
+  assert.ok(fetches[0].options.signal instanceof AbortSignal);
+  store.checkProcessingHomeworkUploads();
+  await tick();
+  assert.equal(fetches.length, 1);
+  store.checkProcessingHomeworkUploads(true);
+  await tick();
+  assert.equal(fetches.length, 2);
+});
+
+test('temporary network errors back off instead of retrying at every interval', async () => {
+  const {store, xhrs, responses, fetches} = environment();
+  responses.push(new Error('offline'));
+  store.startHomeworkUpload(input());
+  xhrs[0].complete(201, {status: 'PROCESSING'});
+  await tick();
+  store.checkProcessingHomeworkUploads();
+  await tick();
+  assert.equal(fetches.length, 1);
+  assert.equal(store.getHomeworkUploads()[0].status, 'processing');
+});
+
+
+test('chunk transport survives navigation and checks server status after commit', async () => {
+  let finish, active;
+  const {store, responses} = environment(undefined, options => {active = options; return new Promise(resolve=>finish=resolve);});
+  const leave = store.subscribeHomeworkUploads(()=>{});
+  store.startHomeworkUpload(input());
+  leave(); store.syncHomeworkUploadAccount();
+  active.progress(60);
+  assert.equal(store.getHomeworkUploads()[0].progress,60);
+  assert.equal(active.signal.aborted,false);
+  responses.push(completed());
+  finish({status:'PROCESSING'}); await tick();
+  assert.equal(store.getHomeworkUploads()[0].status,'success');
+});
+
+test('account switching aborts chunk upload and ignores its late receipt', async () => {
+  let finish, active;
+  const {store, local} = environment(undefined, options => {active = options; return new Promise(resolve=>finish=resolve);});
+  store.startHomeworkUpload(input());
+  local.set('student',JSON.stringify({id:2})); store.syncHomeworkUploadAccount();
+  assert.equal(active.signal.aborted,true);
+  finish({status:'PROCESSING'}); await tick();
+  assert.equal(store.getHomeworkUploads().length,0);
 });

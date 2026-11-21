@@ -1,3 +1,5 @@
+import { sendHomeworkChunks } from './homework-chunk-upload';
+
 export type HomeworkUpload = {
   homeworkId: string;
   attemptId: string;
@@ -18,8 +20,10 @@ let snapshot: readonly HomeworkUpload[] = EMPTY;
 let owner: string | null = null;
 let attemptSequence = 0;
 const listeners = new Set<() => void>();
-const requests = new Map<string, XMLHttpRequest>();
+const requests = new Map<string, {abort: () => void}>();
 const checking = new Set<string>();
+const nextChecks = new Map<string, number>();
+const failures = new Map<string, number>();
 
 function account(): string | null {
   if (!localStorage.getItem('studentAccessToken')) return null;
@@ -44,6 +48,8 @@ export function syncHomeworkUploadAccount() {
   for (const request of requests.values()) request.abort();
   requests.clear();
   checking.clear();
+  nextChecks.clear();
+  failures.clear();
   if (owner) {
     try {
       const stored = JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? 'null');
@@ -90,6 +96,32 @@ export function startHomeworkUpload(input: {homeworkId: string; title: string; f
   if (!/^\d+$/.test(input.homeworkId)) throw new Error('Invalid homework ID');
   const active = snapshot.find(job => job.homeworkId === input.homeworkId && isActiveUpload(job));
   if (active) return active;
+
+  if (process.env.NEXT_PUBLIC_HOMEWORK_CHUNK_UPLOADS !== 'false') {
+    const job: HomeworkUpload = {
+      homeworkId: input.homeworkId, attemptId: `${Date.now()}-${++attemptSequence}`,
+      title: input.title, status: 'uploading', progress: 0, pageCount: input.pageCount, startedAt: Date.now(),
+    };
+    const controller = new AbortController();
+    snapshot = [...snapshot.filter(item => item.homeworkId !== job.homeworkId), job];
+    requests.set(job.homeworkId, controller);
+    publish();
+    void sendHomeworkChunks({
+      api: API_URL, homeworkId: job.homeworkId, attemptId: job.attemptId,
+      token: token.trim(), files: input.files, retainedImageIds: input.retainedImageIds,
+      signal: controller.signal,
+      progress: progress => update(job.homeworkId, job.attemptId, {progress}),
+    }).then(() => {
+      if (!current(job.homeworkId, job.attemptId)) return;
+      update(job.homeworkId, job.attemptId, {status: 'processing', progress: 100, note: undefined});
+      void checkHomeworkUpload(job.homeworkId);
+    }).catch((error: unknown) => {
+      update(job.homeworkId, job.attemptId, {status: 'error', error: error instanceof Error ? error.message : 'ဖိုင်တင်မရပါ။ ပြန်ကြိုးစားပေးပါ။', note: undefined});
+    }).finally(() => {
+      if (requests.get(job.homeworkId) === controller) requests.delete(job.homeworkId);
+    });
+    return job;
+  }
 
   const body = new FormData();
   body.append('retainedImageIds', JSON.stringify(input.retainedImageIds));
@@ -148,13 +180,17 @@ export async function checkHomeworkUpload(homeworkId: string) {
   if (!token || !current(homeworkId, job.attemptId)) return;
   checking.add(job.attemptId);
   try {
-    const response = await fetch(`${API_URL}/student-homeworks/${homeworkId}`, {headers: {Authorization: `Bearer ${token.trim()}`}, cache: 'no-store'});
+    const response = await fetch(`${API_URL}/student-homeworks/${homeworkId}/status`, {headers: {Authorization: `Bearer ${token.trim()}`}, cache: 'no-store', signal: AbortSignal.timeout(10000)});
     if (response.status === 401) {
       update(homeworkId, job.attemptId, {status: 'error', error: 'Login သက်တမ်းကုန်နေပါသည်။ ပြန်လည် Login ဝင်ပေးပါ။'});
       return;
     }
     if (!response.ok) throw new Error('Status request failed');
     const detail = await response.json();
+    failures.delete(job.attemptId);
+    // Wait longer for older queue entries; jitter spreads clients across time.
+    const delay = Math.min(15000, 5000 + Math.floor((Date.now() - job.startedAt) / 60000) * 2000);
+    nextChecks.set(job.attemptId, Date.now() + delay + Math.floor(Math.random() * 1000));
     if (!current(homeworkId, job.attemptId)) return;
     const processing = detail.submission?.processingJob;
     if (detail.status === 'PROCESSING' || ['QUEUED', 'PROCESSING'].includes(processing?.status)) {
@@ -163,20 +199,29 @@ export async function checkHomeworkUpload(homeworkId: string) {
       update(homeworkId, job.attemptId, {recovering: false, note});
     } else if (detail.submission?.processingError) {
       update(homeworkId, job.attemptId, {status: 'error', error: detail.submission.processingError, note: undefined});
-    } else if (['SUBMITTED', 'REVIEWED'].includes(detail.status) && detail.submission?.images?.length > 0 &&
+    } else if (['SUBMITTED', 'REVIEWED'].includes(detail.status) && (detail.submission?.imageCount ?? detail.submission?.images?.length ?? 0) > 0 &&
       (!job.recovering || !job.startedAt || new Date(detail.submission.submittedAt).getTime() >= job.startedAt - 1000)) {
       update(homeworkId, job.attemptId, {status: 'success', note: undefined});
     } else {
       update(homeworkId, job.attemptId, {status: 'error', error: 'ဖိုင်အသစ်များ သိမ်းဆည်းပြီးကြောင်း အတည်မပြုနိုင်ပါ။ အိမ်စာအခြေအနေကို စစ်ပြီး ဖိုင်များ ပြန်ရွေးပေးပါ။', note: undefined});
     }
   } catch {
+    const count = Math.min(4, (failures.get(job.attemptId) ?? 0) + 1);
+    failures.set(job.attemptId, count);
+    nextChecks.set(job.attemptId, Date.now() + Math.min(30000, 5000 * 2 ** count) + Math.floor(Math.random() * 1000));
     update(homeworkId, job.attemptId, {note: 'ချိတ်ဆက်မှုကြောင့် အခြေအနေ စစ်မရသေးပါ။ အလိုအလျောက် ပြန်စစ်နေပါသည်။'});
   } finally { checking.delete(job.attemptId); }
 }
 
-export function checkProcessingHomeworkUploads() {
+export function checkProcessingHomeworkUploads(force = false) {
   syncHomeworkUploadAccount();
-  for (const job of snapshot) if (job.status === 'processing') void checkHomeworkUpload(job.homeworkId);
+  if (typeof document !== 'undefined' && document.hidden) return;
+  for (const job of snapshot) {
+    if (checking.size >= 2) break;
+    if (job.status === 'processing' && (force || Date.now() >= (nextChecks.get(job.attemptId) ?? 0))) {
+      void checkHomeworkUpload(job.homeworkId);
+    }
+  }
 }
 
 export function dismissHomeworkUpload(homeworkId: string) {
