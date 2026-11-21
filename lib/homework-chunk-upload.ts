@@ -31,7 +31,7 @@ export async function sendHomeworkChunks(input: {
     }
   };
   const session = await request(base, () => ({method: 'POST', body: JSON.stringify({attemptId: input.attemptId, retainedImageIds: input.retainedImageIds, files: input.files.map(f => ({name: f.name, type: f.type, size: f.size}))}), headers: {'Content-Type': 'application/json'}}));
-  if (!/^[a-f0-9]{64}$/.test(session.uploadId) || session.chunkBytes !== 256 * 1024) throw new Error('Invalid upload session');
+  if (!/^[a-f0-9]{64}$/.test(session.uploadId) || typeof session.chunkBytes !== 'number' || session.chunkBytes < 64 * 1024) throw new Error('Invalid upload session');
   const total = input.files.reduce((n, f) => n + f.size, 0);
   let received = 0;
   for (const [i, file] of input.files.entries()) {
